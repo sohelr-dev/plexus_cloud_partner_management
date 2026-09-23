@@ -1,0 +1,57 @@
+┌─────────────┐
+│  PARTNERS   │◀──────────────────────────────────────────┐
+│  (MASTER)   │                                           │
+└──────┬──────┘                                           │
+       │                                                  │
+       ├──1:N──▶ partner_business_models                  │
+       ├──1:1──▶ partner_profiles                         │
+       ├──1:N──▶ partner_relationships                    │
+       ├──1:N──▶ partner_relationship_history             │
+       ├──1:N──▶ partner_approvals                        │
+       │                                                  │
+       ├──1:N──▶ partner_marketing_metrics                │
+       ├──1:N──▶ partner_customer_metrics                 │
+       ├──1:N──▶ partner_sales_metrics                    │
+       ├──1:N──▶ partner_churn_metrics                    │
+       ├──1:N──▶ partner_campaigns                        │
+       │                                                  │
+       ├──1:N──▶ partner_revenues                         │
+       ├──1:N──▶ partner_costs                            │
+       ├──1:N──▶ partner_payments                         │
+       ├──1:N──▶ partner_profit_losses                    │
+       ├──1:N──▶ partner_financial_snapshots              │
+       ├──1:N──▶ partner_roi                              │
+       │                                                  │
+       ├──1:N──▶ partner_bandwidth_allocations ──1:N──▶ partner_bandwidth_changes
+       │                                         └──1:N──▶ partner_bandwidth_history
+       │                                         └──1:N──▶ partner_bandwidth_approvals
+       │                                                  │
+       ├──1:N──▶ partner_equipment ──1:N──▶ partner_equipment_assignments
+       │                            ├──1:N──▶ partner_equipment_history
+       │                            └──1:N──▶ partner_equipment_maintenance
+       │                                                  │
+       ├──1:N──▶ partner_end_devices ──1:N──▶ partner_device_history
+       │                                                  │
+       ├──1:N──▶ partner_commission_rules                 │
+       ├──1:N──▶ partner_commissions ──1:N──▶ partner_commission_payments
+       │                              └──1:N──▶ partner_commission_adjustments
+       │                                                  │
+       ├──1:N──▶ partner_support_centers ──1:N──▶ partner_support_center_staff
+       │                                  ├──1:N──▶ partner_support_center_services
+       │                                  ├──1:N──▶ partner_support_center_costs
+       │                                  ├──1:N──▶ partner_support_center_equipment
+       │                                  └──1:N──▶ partner_support_center_history
+       │                                                  │
+       ├──1:N──▶ partner_documents ──1:N──▶ partner_document_versions
+       │                            └──1:N──▶ partner_document_expiry
+       │                                                  │
+       ├──1:N──▶ partner_timeline_events                  │
+       ├──1:N──▶ partner_notes                            │
+       ├──1:N──▶ partner_health_scores                    │
+       ├──1:N──▶ partner_risk_indicators                  │
+       └──1:N──▶ partner_insights                         │
+                                                          │
+                                              ┌───────────┴───────────┐
+                                              │   audit_logs          │
+                                              │   (system-wide)       │
+                                              └───────────────────────┘

@@ -1,0 +1,14 @@
+ # OS junk
+Thumbs.db
+.DS_Store
+Desktop.ini
+project_docs/MASTER_PLAN.md
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env files are ignored inside backend/ and frontend/ by their own .gitignore

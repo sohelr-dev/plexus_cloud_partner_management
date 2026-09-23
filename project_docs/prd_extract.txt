@@ -1,0 +1,2016 @@
+Partner Management Module
+Product Requirements Document (PRD)
+Module: Partner Management
+Version: 1.0
+Status: Development Ready
+Document Type: Functional & Technical Product Requirements
+Primary Users: Management, Partner Management, Sales, Marketing, Finance, Accounts, Network Operations, Inventory, Support Center Management, System Administrator
+
+1. Module Overview
+The Partner Management Module will provide a centralized system for managing the complete commercial, operational, financial, network, and business relationship between the company and its partners.
+The module will support multiple partner business models while maintaining a single partner master record.
+The module will manage:
+? Partner registration
+? Partner approval
+? Partner business models
+? Partner profile
+? Business information
+? Marketing analysis
+? Customer growth
+? Bandwidth sales
+? Bandwidth allocation
+? Bandwidth upgrade/downgrade
+? Network equipment
+? End devices
+? Commission
+? Partner-owned Support Centers/Branches
+? Revenue
+? Cost
+? Payment
+? Outstanding
+? P&L
+? ROI
+? Documents
+? Agreements
+? Partner history
+? Partner health
+? Risk analysis
+? Reports
+? Audit logs
+The system must connect partner-related information from existing ERP, billing, finance, network, inventory, customer, and other operational systems wherever applicable.
+
+2. Main Objectives
+The module must allow the company to:
+1. Create and manage partners.
+2. Define one or multiple business models for each partner.
+3. Manage partner commercial relationships.
+4. Monitor partner sales and marketing performance.
+5. Manage bandwidth sales and allocation.
+6. Track bandwidth upgrades and downgrades.
+7. Manage partner-associated network equipment.
+8. Manage partner end devices.
+9. Configure and manage commission.
+10. Manage partner-owned Support Centers/Branches.
+11. Track partner revenue and cost.
+12. Calculate P&L.
+13. Calculate ROI.
+14. Track payments and outstanding balances.
+15. Maintain partner documents and agreements.
+16. Maintain complete partner history.
+17. Identify partner risks.
+18. Provide management-level reports and insights.
+
+3. Main Navigation
+Partner Management
+¦
++-- Dashboard
++-- Partners
++-- Bandwidth Sales
++-- Commission Based
++-- End Device Based
++-- Support Center
++-- Partner Accounts
++-- Reports
++-- Settings
+
+
+4. Partner Business Models
+The system must support the following business models.
+4.1 Bandwidth Sales
+Partners purchase or consume bandwidth/services from the company.
+Examples:
+? Internet
+? GGC
+? FNA
+? BDIX
+? Other network services
+4.2 Commission Based
+Partners earn commission based on configurable business rules.
+Examples:
+? Percentage of revenue
+? Fixed amount
+? Per activation
+? Per customer
+? Per renewal
+? Package based
+? Bandwidth based
+4.3 End Device Based
+The relationship is based on network endpoint devices.
+Examples:
+? MAC Address
+? Router
+? ONU
+? ONT
+? CPE
+? Device ID
+? Serial Number
+4.4 Support Center
+The partner operates one or more physical/operational Support Centers or Branches.
+It represents the partner's own branch/customer-service/support operation.
+
+5. Multiple Business Models
+One partner can have multiple business models.
+Example:
+ABC Telecom
+
+Business Models:
+? Bandwidth Sales
+? Commission Based
+? End Device Based
+? Support Center
+
+Business model assignment must be configurable.
+
+6. Partner Dashboard
+The Partner Management Dashboard must provide an overall management view.
+6.1 Partner KPIs
+Display:
+? Total Partners
+? Active Partners
+? Pending Partners
+? Suspended Partners
+? Blocked Partners
+? Inactive Partners
+? Terminated Partners
+? New Partners
+6.2 Financial KPIs
+Display:
+? Total Partner Revenue
+? Total Partner Cost
+? Total Partner Profit
+? Outstanding
+? Total Commission
+? Total Investment
+? Average ROI
+6.3 Operational KPIs
+Display:
+? Total Bandwidth
+? Total Active Customers
+? Total End Devices
+? Total Equipment
+? Total Support Centers
+
+7. Dashboard Filters
+Dashboard must support:
+? Date Range
+? Month
+? Quarter
+? Year
+? Partner
+? Partner Type
+? Business Model
+? Area
+? Zone
+? Account Manager
+? Status
+
+8. Partner Management
+8.1 Partner List
+The Partner List must provide:
+? Search
+? Filter
+? Sort
+? Pagination
+? Export
+? Bulk actions where applicable
+Columns:
+FieldPartner IDPartner CodePartner NameBusiness ModelAreaAccount ManagerRevenueProfitBandwidthCustomersStatusHealthActions
+9. Partner Search
+Search must support:
+? Partner Name
+? Partner ID
+? Partner Code
+? Contact Number
+? Email
+? MAC Address
+? Serial Number
+? Device ID
+? Customer ID
+
+10. Partner Creation
+The system must provide a Partner Creation form.
+Basic Information
+Fields:
+? Partner Name
+? Legal Name
+? Business Name
+? Partner Type
+? Partner Category
+? Business Model
+? Contact Person
+? Contact Number
+? Email
+? Address
+? Area
+? Zone
+? Territory
+? Account Manager
+? Relationship Manager
+Commercial Information
+? Contract Type
+? Contract Start Date
+? Contract End Date
+? Payment Terms
+? Credit Limit
+? Credit Days
+? Security Deposit
+? Billing Cycle
+? Pricing Model
+? Discount Policy
+? Commission Model
+
+11. Partner ID and Code
+The system must generate a unique:
+? Partner ID
+? Partner Code
+Example:
+Partner ID: PT-000125
+Partner Code: ABC-00125
+
+Partner code must be unique.
+
+12. Partner Status
+Supported statuses:
+Draft
+Pending Approval
+Active
+Suspended
+Blocked
+Inactive
+Terminated
+
+Every status change must be logged.
+
+13. Partner Approval
+If approval is enabled, partner creation follows:
+Draft
+   ?
+Submitted
+   ?
+Under Review
+   ?
+Approved / Rejected
+   ?
+Active
+
+Approval record must contain:
+? Requester
+? Reviewer
+? Approver
+? Date
+? Decision
+? Reason
+? Supporting Document
+
+14. Partner Profile
+Each partner will have a detailed profile.
+Profile sections:
+Partner Profile
+¦
++-- Overview
++-- Business Information
++-- Marketing Analysis
++-- Financial
++-- Bandwidth
++-- Network Equipment
++-- Users & Devices
++-- Commission
++-- Support Centers
++-- Documents
++-- History
++-- Health & Risk
++-- Audit Log
+
+
+15. Partner Profile Header
+Display:
+? Partner Logo
+? Partner Name
+? Partner ID
+? Partner Code
+? Status
+? Business Models
+? Partner Since
+? Account Manager
+? Relationship Manager
+? Area
+? Zone
+? Health Status
+
+16. Partner Quick Actions
+Authorized users can access:
+? Edit Partner
+? Add Bandwidth
+? Upgrade Bandwidth
+? Downgrade Bandwidth
+? Add Equipment
+? Add End Device
+? Add Commission Rule
+? Add Support Center
+? Add Document
+? Record Payment
+? Add Note
+? Export Profile
+Permissions must control each action.
+
+17. Partner Overview
+The overview must show the most important partner information.
+Business KPIs
+? Total Revenue
+? Current Monthly Revenue
+? Revenue Growth
+? Active Customers
+? Active Devices
+Financial KPIs
+? Total Cost
+? Gross Profit
+? Net Profit
+? Profit Margin
+? ROI
+? Outstanding
+Network KPIs
+? Allocated Bandwidth
+? Current Usage
+? Utilization
+? Equipment Count
+Commercial KPIs
+? Commission
+? Total Payment
+? Outstanding
+? Credit Utilization
+Support Center KPIs
+? Total Support Centers
+? Active Support Centers
+? Total Staff
+? Customers Served
+
+18. Business Information
+Business section must contain:
+? Business Type
+? Business Category
+? Business Model
+? Operating Area
+? Zone
+? Territory
+? Account Manager
+? Relationship Manager
+? Contract Type
+? Contract Period
+? Payment Terms
+? Credit Limit
+? Security Deposit
+? Billing Cycle
+? Status
+
+19. Partner Relationship Management
+Track:
+? Current Account Manager
+? Previous Account Manager
+? Assignment Date
+? Transfer Date
+? Transfer Reason
+? Last Meeting
+? Next Follow-up
+? Relationship Status
+Relationship changes must be stored historically.
+
+20. Marketing Analysis
+Marketing Analysis will provide partner sales and customer growth information.
+The system must track:
+? Customer Acquisition
+? Customer Growth
+? New Activations
+? Renewals
+? Churn
+? Package Sales
+? Revenue Growth
+? Area-wise Growth
+? Zone-wise Growth
+? Campaign Performance
+? Target vs Achievement
+
+21. Marketing KPIs
+Display:
+? Total Customers
+? Active Customers
+? New Customers
+? Renewals
+? Churn
+? Growth %
+? Revenue
+? Average Revenue per Customer
+? Campaign Conversion
+? Target Achievement
+
+22. Customer Growth
+Display:
+? Opening Customers
+? New Customers
+? Reactivations
+? Renewals
+? Suspensions
+? Terminations
+? Churn
+? Closing Customers
+Formula:
+Customer Growth % =
+(New Customers / Opening Customers) × 100
+
+
+23. Churn Analysis
+Formula:
+Churn Rate =
+Terminated Customers /
+Opening Active Customers × 100
+
+Analyze by:
+? Month
+? Quarter
+? Year
+? Package
+? Area
+? Zone
+? Customer Type
+? Churn Reason
+
+24. Sales Performance
+Display:
+? Sales Target
+? Actual Sales
+? New Customers
+? Renewals
+? Package Sales
+? Upgrade Sales
+? Downgrade Sales
+? Revenue
+? Achievement %
+Formula:
+Achievement % =
+Actual / Target × 100
+
+
+25. Package Performance
+Package-level metrics:
+? Package Name
+? Customers
+? New Sales
+? Renewals
+? Revenue
+? Churn
+? Growth
+? Average Revenue
+
+26. Area and Zone Analysis
+Partner performance must be analyzed by:
+? Area
+? Zone
+? Territory
+Metrics:
+? Customer Count
+? New Customers
+? Revenue
+? Churn
+? Growth
+? Bandwidth
+? Average Revenue
+
+27. Campaign Management
+Campaign information:
+? Campaign Name
+? Campaign Type
+? Partner
+? Start Date
+? End Date
+? Target
+? Actual
+? New Customers
+? Revenue
+? Campaign Cost
+? Conversion %
+? ROI
+? Status
+Campaign ROI:
+Campaign ROI =
+Campaign Profit / Campaign Cost × 100
+
+
+28. Financial Management
+The Financial section must consolidate all partner-related financial information.
+Revenue
+Cost
+Payment
+Outstanding
+Commission
+P&L
+ROI
+Investment
+
+
+29. Revenue Management
+Revenue sources can include:
+? Bandwidth Sales
+? Internet
+? GGC
+? FNA
+? BDIX
+? Package Sales
+? Activation Fee
+? Renewal Fee
+? Installation Fee
+? Device Charge
+? Service Charge
+? Other Revenue
+Every revenue transaction must have a source reference.
+
+30. Cost Management
+Partner-related costs can include:
+? Bandwidth Cost
+? Upstream Cost
+? GGC Cost
+? FNA Cost
+? BDIX Cost
+? Commission
+? Equipment Cost
+? Marketing Cost
+? Support Center Cost
+? Installation Cost
+? Maintenance Cost
+? Discount
+? Operational Cost
+? Other Cost
+
+31. Partner P&L
+Gross Profit
+Gross Profit =
+Revenue - Direct Cost
+
+Net Profit
+Net Profit =
+Revenue
+- Bandwidth Cost
+- Commission
+- Equipment Cost
+- Marketing Cost
+- Support Center Cost
+- Operational Cost
+- Other Partner Costs
+
+Profit Margin
+Profit Margin % =
+Net Profit / Revenue × 100
+
+
+32. P&L Dashboard
+Filters:
+? Today
+? This Month
+? Previous Month
+? Current Quarter
+? Current Year
+? Custom Date Range
+Display:
+MetricAmountRevenue?Direct Cost?Gross Profit?Commission?Equipment Cost?Marketing Cost?Support Center Cost?Other Cost?Net Profit?Margin%
+33. Payment & Outstanding
+Display:
+? Total Invoice
+? Total Invoiced
+? Total Paid
+? Outstanding
+? Overdue
+? Credit Limit
+? Credit Utilization
+? Last Payment
+? Last Payment Date
+? Next Due Date
+? Average Payment Delay
+
+34. ROI Management
+Investment categories:
+? Security Deposit
+? Equipment Investment
+? Infrastructure Investment
+? Marketing Investment
+? Setup Cost
+? Credit Exposure
+? Other Approved Investment
+Formula:
+ROI % =
+Net Profit / Total Partner Investment × 100
+
+ROI methodology must be configurable.
+
+35. ROI Dashboard
+Display:
+? Total Investment
+? Total Return
+? Net Profit
+? ROI %
+? Payback Period
+? Monthly ROI
+? Quarterly ROI
+? Yearly ROI
+
+36. Bandwidth Sales
+The Bandwidth Sales section manages bandwidth/services sold to partners.
+Supported services:
+? Internet
+? GGC
+? FNA
+? BDIX
+? Other Configurable Services
+
+37. Bandwidth Allocation
+Each allocation must contain:
+? Partner
+? Service
+? Allocated Bandwidth
+? Ratio
+? Price
+? Cost
+? Effective Date
+? Expiry Date
+? Status
+? Work Order
+? Approval
+
+38. Bandwidth Summary
+Display:
+? Total Allocated
+? Current Active
+? Current Usage
+? Available
+? Utilization
+? Ratio
+? Monthly Cost
+? Monthly Revenue
+? Profit
+Example:
+Internet
+Allocated: 800 Mbps
+Usage: 620 Mbps
+Available: 180 Mbps
+Utilization: 77.5%
+Ratio: 1:8
+
+
+39. Bandwidth Upgrade
+Upgrade workflow:
+Request
+ ?
+Capacity Check
+ ?
+Commercial Review
+ ?
+Approval
+ ?
+Work Order
+ ?
+Bandwidth Allocation
+ ?
+Billing Update
+ ?
+Effective
+
+Request fields:
+? Current Bandwidth
+? Requested Bandwidth
+? Difference
+? Reason
+? Effective Date
+? Estimated Cost
+? Expected Revenue
+? Expected Profit
+? Requester
+? Approver
+? Supporting Document
+
+40. Bandwidth Downgrade
+Track:
+? Previous Bandwidth
+? New Bandwidth
+? Reduction
+? Revenue Impact
+? Cost Impact
+? Profit Impact
+? Reason
+? Effective Date
+? Requester
+? Approver
+
+41. Bandwidth Change History
+DateServicePreviousNewChangeTypeReasonApproved ByTypes:
+? Upgrade
+? Downgrade
+? Temporary
+? Emergency
+? Administrative
+
+42. Bandwidth Impact Analysis
+Before approval, show:
+Current Bandwidth: 500 Mbps
+Requested: 800 Mbps
+Additional: 300 Mbps
+
+Estimated Monthly Cost: ?XX,XXX
+Expected Revenue: ?XX,XXX
+Expected Profit: ?XX,XXX
+
+The purpose is to allow management to understand the commercial impact before approval.
+
+43. Network Equipment Management
+Partner-associated equipment must be managed through the module or integrated inventory system.
+Supported:
+? Router
+? ONU
+? ONT
+? OLT
+? Switch
+? CPE
+? Access Point
+? Wireless Equipment
+? Fiber Equipment
+? Other Network Equipment
+
+44. Equipment Information
+Fields:
+? Equipment ID
+? Asset ID
+? Serial Number
+? MAC Address
+? Equipment Type
+? Manufacturer
+? Model
+? Vendor
+? Purchase Date
+? Purchase Cost
+? Installation Date
+? Location
+? Partner
+? Customer
+? Ownership
+? Warranty Start
+? Warranty End
+? Status
+
+45. Equipment Ownership
+Company Owned
+Partner Owned
+Customer Owned
+Leased
+Rented
+
+
+46. Equipment Status
+Available
+Assigned
+Installed
+Active
+Faulty
+Under Maintenance
+Replaced
+Returned
+Lost
+Retired
+
+
+47. Equipment History
+Track:
+Purchased
+ ?
+Assigned
+ ?
+Installed
+ ?
+Maintenance
+ ?
+Replacement
+ ?
+Returned / Retired
+
+Every equipment status change must be logged.
+
+48. Equipment Financial Impact
+Display:
+? Total Equipment Investment
+? Active Equipment Value
+? Replacement Cost
+? Maintenance Cost
+? Equipment Cost per Customer
+Formula:
+Equipment Cost per Customer =
+Total Equipment Investment / Active Customers
+
+
+49. End Device Based Management
+The End Device Based business model must support:
+? MAC Address
+? Router ID
+? ONU Serial
+? ONT Serial
+? CPE ID
+? Device ID
+? Other configurable identifier
+Display:
+? Total Devices
+? Active Devices
+? Offline Devices
+? Faulty Devices
+? Replaced Devices
+? Device Growth
+
+50. End Device History
+Track:
+? Device Added
+? Device Assigned
+? Device Activated
+? Device Suspended
+? Device Replaced
+? Device Returned
+? Device Retired
+
+51. User / Customer Information
+Display:
+? Total Customers
+? Active Customers
+? Suspended Customers
+? Expired Customers
+? New Customers
+? Renewals
+? Terminations
+? Churn
+Customer information should come from the existing customer/subscriber system.
+
+52. Commission Based Management
+Commission must support configurable business rules.
+Supported models:
+? Percentage Based
+? Fixed Amount
+? Per Customer
+? Per Activation
+? Per Renewal
+? Per Package
+? Revenue Based
+? Bandwidth Based
+? Custom Rule
+
+53. Commission Rule
+Fields:
+? Rule Name
+? Partner
+? Service
+? Package
+? Commission Type
+? Rate
+? Fixed Amount
+? Effective Date
+? Expiry Date
+? Target
+? Maximum Limit
+? Status
+
+54. Commission Calculation
+Example:
+Revenue = ?100,000
+Commission Rate = 5%
+
+Commission =
+?100,000 × 5%
+= ?5,000
+
+
+55. Commission Lifecycle
+Generated
+ ?
+Pending
+ ?
+Calculated
+ ?
+Approved
+ ?
+Payable
+ ?
+Paid
+
+Additional statuses:
+? Rejected
+? Cancelled
+? Reversed
+? Adjusted
+
+56. Commission Dashboard
+Display:
+? Total Generated
+? Pending
+? Approved
+? Payable
+? Paid
+? Reversed
+? Current Month
+? Previous Month
+? YTD
+Commission must be included in partner financial analysis.
+
+57. Commission History
+DateServiceRevenueRuleRateCommissionStatusEvery commission transaction must reference its source transaction.
+
+58. Support Center
+Definition
+Support Center represents the partner's own physical/operational branch or customer support center.
+It is not a ticketing system.
+A single partner can operate multiple Support Centers.
+Example:
+ABC Telecom
+¦
++-- Mirpur Support Center
++-- Uttara Support Center
++-- Savar Support Center
+
+
+59. Support Center Management
+The Support Center section must manage:
+? Branch Profile
+? Location
+? Staff
+? Working Hours
+? Service Coverage
+? Customers Served
+? Equipment
+? Operating Cost
+? Revenue Contribution
+? Performance
+? Documents
+? Branch History
+
+60. Support Center Profile
+Fields:
+? Support Center ID
+? Branch Code
+? Support Center Name
+? Partner
+? Branch Type
+? Address
+? Area
+? Zone
+? Contact Number
+? Email
+? Branch Manager
+? Staff Count
+? Working Hours
+? Weekly Off Day
+? Opening Date
+? Status
+? Service Coverage Area
+
+61. Support Center Status
+Planned
+Active
+Temporarily Closed
+Suspended
+Closed
+
+
+62. Support Center Manpower
+Staff categories:
+? Branch Manager
+? Customer Service
+? Technical Staff
+? Sales Staff
+? Marketing Staff
+? Accounts Staff
+? Other Staff
+Display:
+? Total Staff
+? Active Staff
+? Vacant Positions
+? Monthly Staff Cost
+
+63. Support Center Service Coverage
+Each Support Center can define:
+? Service Area
+? Zone
+? Territory
+? Coverage Area
+? Supported Services
+? Customer Capacity
+
+64. Support Center Equipment
+Equipment can include:
+? Router
+? ONU
+? Switch
+? Computer
+? Printer
+? WiFi AP
+? UPS
+? CCTV
+? Network Equipment
+? Office Equipment
+Equipment should be linked with the central inventory/asset system.
+
+65. Support Center Operating Cost
+Track:
+? Rent
+? Electricity
+? Internet
+? Staff Cost
+? Equipment Cost
+? Maintenance
+? Transportation
+? Marketing
+? Other Operating Costs
+
+66. Support Center Performance
+Display:
+? Customers Served
+? Active Customers
+? New Customers
+? Customer Growth
+? Revenue Contribution
+? Operating Cost
+? Profit Contribution
+? Cost per Customer
+? Revenue per Customer
+
+67. Support Center Financial Contribution
+Formula:
+Branch Profit Contribution =
+Revenue Contribution
+- Branch Operating Cost
+- Branch Equipment Cost
+- Other Branch Costs
+
+The result may contribute to the partner's P&L according to the configured accounting method.
+
+68. Support Center History
+Track:
+? Branch Created
+? Branch Opened
+? Manager Changed
+? Staff Changes
+? Location Changed
+? Service Coverage Changed
+? Equipment Added
+? Equipment Removed
+? Cost Changes
+? Branch Suspended
+? Branch Closed
+
+69. Documents Management
+Document categories:
+Legal
+? Partner Agreement
+? Contract
+? Amendment
+? Authorization
+? Trade License
+? Tax Documents
+Financial
+? Invoice
+? Payment Receipt
+? Security Deposit
+? Credit Approval
+Network
+? Bandwidth Work Order
+? Capacity Approval
+? Equipment List
+? Network Diagram
+Support Center
+? Branch Agreement
+? Rent Agreement
+? Branch Approval
+? Branch Equipment List
+? Branch Documents
+
+70. Document Metadata
+Each document must contain:
+? Document ID
+? Document Type
+? Document Name
+? Partner
+? Version
+? Upload Date
+? Effective Date
+? Expiry Date
+? Uploaded By
+? Approved By
+? Status
+? Remarks
+? File
+
+71. Document Versioning
+Example:
+Partner Agreement
+ +-- Version 1.0
+ +-- Version 1.1
+ +-- Version 2.0
+
+Old versions must remain available according to user permission.
+
+72. Document Expiry
+The system must support expiry alerts:
+90 Days
+60 Days
+30 Days
+15 Days
+7 Days
+Expired
+
+
+73. Partner History
+The History section must maintain major partner activities.
+Examples:
+Partner Created
+Partner Approved
+Partner Activated
+Agreement Signed
+Bandwidth Allocated
+Bandwidth Upgraded
+Bandwidth Downgraded
+Equipment Added
+Equipment Replaced
+Customer Added
+Commission Generated
+Commission Approved
+Payment Received
+Support Center Created
+Support Center Closed
+Document Uploaded
+Contract Renewed
+
+
+74. History Filters
+Users can filter history by:
+? Business
+? Marketing
+? Financial
+? Bandwidth
+? Equipment
+? Users
+? Commission
+? Support Center
+? Documents
+? Approval
+? System
+
+75. Partner Health Score
+The system should calculate a configurable Partner Health Score.
+Default weighting:
+CategoryWeightFinancial Health25%Revenue Growth20%Profitability20%Payment Behavior10%Bandwidth Growth10%Customer Growth10%Operational Performance5%Total:
+100%
+
+76. Health Status
+Default:
+90-100 = Excellent
+75-89  = Healthy
+60-74  = Watch
+40-59  = Risk
+0-39   = Critical
+
+Thresholds must be configurable.
+
+77. Risk Analysis
+Financial Risk
+? Outstanding increasing
+? Credit limit exceeded
+? Payment overdue
+? Revenue declining
+? Profit declining
+Marketing Risk
+? Customer decline
+? High churn
+? Low new customer acquisition
+? Revenue decline
+Network Risk
+? High utilization
+? Low utilization
+? Frequent bandwidth downgrade
+? Capacity pressure
+Equipment Risk
+? High equipment failure
+? High replacement cost
+? Warranty expiry
+Support Center Risk
+? High branch operating cost
+? Low customer contribution
+? Low revenue
+? Low branch utilization
+Contract Risk
+? Agreement expiry
+? Missing documents
+? Expired legal documents
+
+78. Management Insights
+The system should generate data-based management insights.
+Examples:
+Partner revenue increased by 18% compared with the previous month.
+Bandwidth utilization reached 91%; capacity expansion should be reviewed.
+Customer growth has declined for three consecutive months.
+Support Center operating cost increased by 15%.
+Commission represents 7.2% of partner revenue.
+Profitability declined despite revenue growth.
+Insights must be generated from actual data.
+
+79. Management Recommendations
+Based on data, the system may recommend:
+? Bandwidth Upgrade
+? Bandwidth Downgrade
+? Credit Limit Review
+? Payment Follow-up
+? Commission Review
+? Marketing Campaign
+? Package Migration
+? Equipment Replacement
+? Support Center Review
+? Contract Renewal
+? Partner Risk Review
+Each recommendation must display the reason/data behind it.
+
+80. Partner Notes
+Authorized users can add internal notes.
+Fields:
+? Note
+? Category
+? Priority
+? Created By
+? Created Date
+? Attachment
+? Visibility
+Categories:
+? Management
+? Sales
+? Finance
+? Network
+? Marketing
+? Support Center
+? General
+
+81. Reporting
+The module must provide:
+Partner Report
+? Partner Information
+? Business Model
+? Status
+? Revenue
+? Cost
+? Profit
+? ROI
+? Health
+Financial Report
+? Revenue
+? Cost
+? P&L
+? Payment
+? Outstanding
+? Commission
+Marketing Report
+? Customers
+? Growth
+? Churn
+? Package
+? Revenue
+? Campaign
+Bandwidth Report
+? Allocation
+? Usage
+? Upgrade
+? Downgrade
+? Cost
+? Revenue
+Equipment Report
+? Equipment
+? Cost
+? Status
+? Warranty
+? Replacement
+Commission Report
+? Generated
+? Approved
+? Paid
+? Pending
+? Reversed
+Support Center Report
+? Branch
+? Staff
+? Customers
+? Revenue
+? Cost
+? Profit
+? Status
+
+82. Partner Profile Export
+Export formats:
+? PDF
+? Excel
+? CSV
+? Print
+Export options:
+Current View
+Selected Sections
+Full Partner Report
+Custom Date Range
+
+
+83. Partner Management Report
+A complete partner report should contain:
+1. Partner Information
+2. Business Information
+3. Marketing Analysis
+4. Revenue
+5. Cost
+6. P&L
+7. ROI
+8. Bandwidth
+9. Bandwidth History
+10. Equipment
+11. Users & Devices
+12. Commission
+13. Support Centers
+14. Documents
+15. Health
+16. Risk
+17. Management Insights
+18. History
+
+84. Database Architecture
+The existing partners table should remain the master partner entity.
+Recommended supporting tables:
+partners
+partner_business_models
+partner_profiles
+partner_relationships
+
+partner_marketing_metrics
+partner_campaigns
+partner_customer_metrics
+partner_churn_metrics
+partner_sales_metrics
+
+partner_revenues
+partner_costs
+partner_payments
+partner_profit_losses
+partner_financial_snapshots
+partner_roi
+
+partner_bandwidth_allocations
+partner_bandwidth_changes
+partner_bandwidth_history
+partner_bandwidth_approvals
+
+partner_equipment
+partner_equipment_assignments
+partner_equipment_history
+partner_equipment_maintenance
+
+partner_end_devices
+partner_device_history
+
+partner_commission_rules
+partner_commissions
+partner_commission_payments
+partner_commission_adjustments
+
+partner_support_centers
+partner_support_center_staff
+partner_support_center_services
+partner_support_center_costs
+partner_support_center_equipment
+partner_support_center_history
+
+partner_documents
+partner_document_versions
+partner_document_expiry
+
+partner_timeline_events
+partner_notes
+
+partner_health_scores
+partner_risk_indicators
+partner_insights
+
+partner_relationship_history
+
+
+85. Source of Truth
+The Partner Management module must not unnecessarily duplicate data already available in existing systems.
+Recommended architecture:
+Billing
+   ?
+Revenue Transactions
+   ?
+Partner Financial Aggregation
+   ?
+Partner Management
+
+Network Management
+   ?
+Bandwidth / Usage
+   ?
+Partner Aggregation
+   ?
+Partner Management
+
+Inventory
+   ?
+Equipment
+   ?
+Partner Assignment
+   ?
+Partner Management
+
+Customer Management
+   ?
+Users / Devices
+   ?
+Partner Metrics
+   ?
+Partner Management
+
+
+86. Financial Data Traceability
+Every financial number must be traceable.
+Example:
+Net Profit
+   ?
+Revenue + Cost
+   ?
+Financial Transactions
+   ?
+Invoice
+   ?
+Partner
+   ?
+Service
+
+Bandwidth:
+Bandwidth Upgrade
+   ?
+Approval
+   ?
+Work Order
+   ?
+Allocation
+   ?
+Billing
+   ?
+Revenue / Cost
+   ?
+P&L
+
+Commission:
+Revenue Transaction
+   ?
+Commission Rule
+   ?
+Commission Calculation
+   ?
+Approval
+   ?
+Payment
+   ?
+P&L
+
+Support Center:
+Support Center
+   ?
+Revenue Contribution
+   ?
+Operating Cost
+   ?
+Branch Profit
+   ?
+Partner P&L
+
+
+87. API Requirements
+Partner APIs
+GET    /api/partners
+POST   /api/partners
+GET    /api/partners/{id}
+PUT    /api/partners/{id}
+DELETE /api/partners/{id}
+
+Partner Profile
+GET /api/partners/{id}/overview
+GET /api/partners/{id}/business
+GET /api/partners/{id}/marketing
+GET /api/partners/{id}/financial
+GET /api/partners/{id}/pnl
+GET /api/partners/{id}/roi
+GET /api/partners/{id}/bandwidth
+GET /api/partners/{id}/equipment
+GET /api/partners/{id}/devices
+GET /api/partners/{id}/commission
+GET /api/partners/{id}/support-centers
+GET /api/partners/{id}/documents
+GET /api/partners/{id}/history
+GET /api/partners/{id}/health
+GET /api/partners/{id}/risk
+
+
+88. Bandwidth APIs
+POST /api/partners/{id}/bandwidth/upgrade
+POST /api/partners/{id}/bandwidth/downgrade
+GET  /api/partners/{id}/bandwidth/history
+
+
+89. Equipment APIs
+GET  /api/partners/{id}/equipment
+POST /api/partners/{id}/equipment
+GET  /api/equipment/{id}
+PUT  /api/equipment/{id}
+POST /api/equipment/{id}/replace
+POST /api/equipment/{id}/return
+
+
+90. Commission APIs
+GET  /api/partners/{id}/commission
+POST /api/partners/{id}/commission/rules
+PUT  /api/commission/rules/{id}
+
+POST /api/commission/{id}/approve
+POST /api/commission/{id}/pay
+POST /api/commission/{id}/reverse
+
+
+91. Support Center APIs
+GET  /api/partners/{partnerId}/support-centers
+POST /api/partners/{partnerId}/support-centers
+
+GET  /api/support-centers/{id}
+PUT  /api/support-centers/{id}
+
+GET  /api/support-centers/{id}/staff
+GET  /api/support-centers/{id}/equipment
+GET  /api/support-centers/{id}/costs
+GET  /api/support-centers/{id}/performance
+GET  /api/support-centers/{id}/history
+
+
+92. Permission Model
+Management
+Full read access and approval permissions.
+Partner Manager
+? Partners
+? Business
+? Marketing
+? Relationship
+? Support Centers
+Sales
+? Partners
+? Sales
+? Bandwidth
+? Customers
+Marketing
+? Marketing
+? Customer Growth
+? Campaigns
+Finance
+? Revenue
+? Cost
+? P&L
+? ROI
+? Investment
+Accounts
+? Invoice
+? Payment
+? Outstanding
+? Commission
+Network
+? Bandwidth
+? Equipment
+? Devices
+Inventory
+? Equipment
+? Asset Management
+Support Center Management
+? Support Centers
+? Staff
+? Coverage
+? Branch Performance
+System Administrator
+Full access and configuration.
+
+93. Audit Log
+Audit logging is mandatory.
+Actions:
+? Partner Created
+? Partner Updated
+? Partner Approved
+? Partner Status Changed
+? Business Model Changed
+? Credit Limit Changed
+? Bandwidth Changed
+? Commission Rule Changed
+? Commission Approved
+? Commission Paid
+? Equipment Added
+? Equipment Replaced
+? Support Center Created
+? Support Center Updated
+? Support Center Closed
+? Payment Recorded
+? Document Uploaded
+? Document Deleted
+? Account Manager Changed
+Audit fields:
+User
+Action
+Entity
+Entity ID
+Previous Value
+New Value
+IP Address
+Timestamp
+
+
+94. Notifications
+Partner
+? Approval
+? Suspension
+? Contract Expiry
+Finance
+? Outstanding Increased
+? Credit Limit Exceeded
+? Payment Overdue
+Bandwidth
+? High Utilization
+? Upgrade Request
+? Downgrade Request
+Equipment
+? Warranty Expiry
+? Equipment Failure
+Commission
+? Pending Approval
+? Payment Due
+Support Center
+? Branch Approval
+? Branch Status Change
+? High Operating Cost
+Documents
+? Document Expiry
+? Document Expired
+Health
+? Health Score Declined
+? Risk Status Changed
+
+95. Scheduled Jobs
+Daily:
+? Revenue Aggregation
+? Cost Aggregation
+? Customer Metrics
+? Bandwidth Metrics
+? Equipment Metrics
+? Support Center Metrics
+? Health Score
+? Risk Detection
+Monthly:
+? P&L Snapshot
+? ROI Snapshot
+? Marketing Summary
+? Commission Summary
+? Support Center Profitability
+
+96. Performance Requirements
+The module must support partners with:
+? Thousands of customers
+? Thousands of devices
+? Large financial transaction history
+? Large equipment history
+? Multiple Support Centers
+? Large document history
+Technical requirements:
+? Pagination
+? Lazy Loading
+? Database Indexing
+? API Aggregation
+? Caching
+? Background Jobs
+? Date-based Filtering
+The initial Partner Profile page must not load all historical transactions.
+
+97. Security Requirements
+The system must implement:
+? Authentication
+? Role-Based Access Control
+? API Authorization
+? File Access Control
+? Financial Data Permission
+? Partner Data Isolation
+? Audit Logging
+? Secure Document Storage
+? Input Validation
+? File Upload Validation
+A user must never be able to access another partner's restricted information by changing an ID in the URL/API request.
+
+98. Business Rules
+BR-01
+A partner can have multiple business models.
+BR-02
+A partner can have multiple Support Centers.
+BR-03
+Support Center is a branch/operational entity and not a ticketing system.
+BR-04
+Support Center costs can contribute to Partner P&L.
+BR-05
+Equipment ownership must be tracked.
+BR-06
+Financial transactions cannot be permanently deleted after posting.
+BR-07
+Reversal or adjustment must be used for financial corrections.
+BR-08
+Bandwidth changes must follow the configured approval process.
+BR-09
+Commission cannot be paid before approval.
+BR-10
+Partner documents must support versioning.
+BR-11
+Expired documents must generate alerts.
+BR-12
+Important partner changes must create history/audit records.
+BR-13
+Financial KPIs should derive from source transactions.
+BR-14
+Partner health should be recalculated after significant business changes.
+
+99. Testing Requirements
+Functional Testing
+Test:
+? Partner Creation
+? Partner Approval
+? Business Model
+? Partner Update
+? Marketing
+? Financial
+? P&L
+? ROI
+? Bandwidth
+? Equipment
+? End Devices
+? Commission
+? Support Centers
+? Documents
+? History
+? Health
+? Reports
+Financial Testing
+Verify:
+Revenue - Cost = Profit
+
+and:
+Net Profit / Investment × 100 = ROI
+
+Permission Testing
+Verify every role can access only authorized information.
+Security Testing
+Test:
+? Unauthorized API access
+? Partner ID manipulation
+? File access
+? Permission bypass
+? Financial data access
+Performance Testing
+Test with:
+? 10,000+ customers
+? 10,000+ devices
+? 100,000+ transactions
+? Multiple Support Centers
+? Large history
+
+100. Acceptance Criteria
+Partner
+? Partner can be created.
+? Partner can be edited.
+? Partner can be approved.
+? Partner can have multiple business models.
+? Partner status can be changed.
+? Partner relationship history is available.
+Marketing
+? Customer growth works.
+? Churn works.
+? Sales performance works.
+? Package analysis works.
+? Campaign management works.
+? Target vs achievement works.
+Financial
+? Revenue is available.
+? Cost is available.
+? Payment is available.
+? Outstanding is available.
+? P&L is calculated.
+? Profit margin is calculated.
+? ROI is calculated.
+Bandwidth
+? Allocation works.
+? Usage works.
+? Upgrade works.
+? Downgrade works.
+? Approval works.
+? Financial impact is calculated.
+? History is available.
+Equipment
+? Equipment can be added.
+? Equipment can be assigned.
+? Equipment status can be changed.
+? Equipment history is maintained.
+? Warranty is tracked.
+? Replacement is tracked.
+? Equipment cost is available.
+End Device
+? Device can be linked to a partner.
+? Device status can be tracked.
+? Device history is maintained.
+? Device types are configurable.
+Commission
+? Commission rules can be configured.
+? Commission is calculated.
+? Approval works.
+? Payment status works.
+? Reversal works.
+? Commission is reflected in financial analysis.
+Support Center
+? Multiple branches can be created.
+? Branch profile can be managed.
+? Staff can be managed.
+? Service coverage can be defined.
+? Branch equipment can be tracked.
+? Branch cost can be tracked.
+? Branch performance can be measured.
+? Branch history can be viewed.
+? Branch financial contribution can be calculated.
+Documents
+? Documents can be uploaded.
+? Documents can be versioned.
+? Expiry can be tracked.
+? Expiry alerts work.
+History
+? Major partner events are recorded.
+? History can be filtered.
+? History is traceable.
+Health & Risk
+? Health score is calculated.
+? Risk indicators are generated.
+? Management insights are displayed.
+Reports
+? PDF export works.
+? Excel export works.
+? CSV export works.
+? Date filters work.
+
+101. Recommended Development Phases
+Phase 1 - Partner Core
+? Partner CRUD
+? Partner Business Models
+? Partner Approval
+? Partner Profile
+? Partner Status
+? Relationship Management
+? RBAC
+? Audit Log
+Phase 2 - Business & Financial
+? Revenue
+? Cost
+? Payment
+? Outstanding
+? P&L
+? ROI
+? Financial Reports
+Phase 3 - Network & Commercial
+? Bandwidth Sales
+? Bandwidth Allocation
+? Upgrade
+? Downgrade
+? Equipment
+? End Device
+? Commission
+Phase 4 - Marketing & Support Center
+? Marketing Analysis
+? Customer Growth
+? Churn
+? Campaign
+? Support Center
+? Branch Staff
+? Branch Cost
+? Branch Performance
+Phase 5 - Intelligence
+? Health Score
+? Risk Analysis
+? Management Insights
+? Recommendations
+? Advanced Reports
+? Forecasting
+
+102. Final Module Structure
+The final Partner Management module should be:
+Partner Management
+¦
++-- Dashboard
+¦
++-- Partners
+¦   ¦
+¦   +-- Partner Profile
+¦       ¦
+¦       +-- Overview
+¦       +-- Business Information
+¦       ¦
+¦       +-- Marketing Analysis
+¦       ¦   +-- Customer Growth
+¦       ¦   +-- Sales Performance
+¦       ¦   +-- Package Performance
+¦       ¦   +-- Churn
+¦       ¦   +-- Area/Zone Analysis
+¦       ¦   +-- Campaigns
+¦       ¦
+¦       +-- Financial
+¦       ¦   +-- Revenue
+¦       ¦   +-- Cost
+¦       ¦   +-- Payment
+¦       ¦   +-- Outstanding
+¦       ¦   +-- P&L
+¦       ¦   +-- ROI
+¦       ¦
+¦       +-- Bandwidth
+¦       ¦   +-- Allocation
+¦       ¦   +-- Usage
+¦       ¦   +-- Upgrade
+¦       ¦   +-- Downgrade
+¦       ¦   +-- History
+¦       ¦
+¦       +-- Network Equipment
+¦       ¦   +-- Equipment
+¦       ¦   +-- Deployment
+¦       ¦   +-- Cost
+¦       ¦   +-- Warranty
+¦       ¦   +-- Replacement
+¦       ¦
+¦       +-- Users & Devices
+¦       ¦
+¦       +-- Commission
+¦       ¦   +-- Rules
+¦       ¦   +-- Generated
+¦       ¦   +-- Approved
+¦       ¦   +-- Payable
+¦       ¦   +-- Paid
+¦       ¦
+¦       +-- Support Centers
+¦       ¦   +-- Branches
+¦       ¦   +-- Branch Profile
+¦       ¦   +-- Staff
+¦       ¦   +-- Coverage
+¦       ¦   +-- Equipment
+¦       ¦   +-- Operating Cost
+¦       ¦   +-- Performance
+¦       ¦   +-- History
+¦       ¦
+¦       +-- Documents
+¦       +-- History
+¦       +-- Health & Risk
+¦       +-- Audit Log
+¦
++-- Bandwidth Sales
+¦
++-- Commission Based
+¦
++-- End Device Based
+¦
++-- Support Center
+¦
++-- Partner Accounts
+¦
++-- Reports
+¦
++-- Settings
+
+103. Product Principle
+The Partner Management Module must operate as a connected business management system rather than a collection of independent CRUD screens.
+The overall relationship should be:
+Partner
+   ?
+Business Model
+   ?
+Customers / Devices
+   ?
+Bandwidth / Services
+   ?
+Equipment
+   ?
+Support Centers
+   ?
+Revenue
+   ?
+Cost
+   ?
+Commission
+   ?
+P&L
+   ?
+ROI
+   ?
+Health & Risk
+   ?
+Management Decision
+
+The Partner Profile is the central place from which authorized users can understand and manage the partner's business relationship.
+Support Center specifically represents the partner's own branch/support-center operation and must not contain ticketing functionality.
+All financial, bandwidth, equipment, customer, commission, and branch-related information should remain traceable to its original transaction/source system.
+
