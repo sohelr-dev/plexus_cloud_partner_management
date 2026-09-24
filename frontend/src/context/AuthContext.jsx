@@ -17,11 +17,17 @@ function readStoredUser() {
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY))
   const [user, setUser] = useState(() => readStoredUser())
-  const [status, setStatus] = useState(
-    () => (localStorage.getItem(TOKEN_KEY) ? 'loading' : 'unauthenticated'),
-  )
 
-  // Validate stored token against the API on boot
+
+  const [status, setStatus] = useState(() => {
+    const hasToken = Boolean(localStorage.getItem(TOKEN_KEY))
+    const hasUser  = Boolean(localStorage.getItem(USER_KEY))
+    if (hasToken && hasUser) return 'authenticated'  // optimistic — verified below
+    if (hasToken)            return 'loading'         // token but no cached user yet
+    return 'unauthenticated'
+  })
+
+  // Silent background verification on boot
   useEffect(() => {
     let cancelled = false
     if (!token) {
@@ -45,9 +51,7 @@ export function AuthProvider({ children }) {
         setUser(null)
         setStatus('unauthenticated')
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, []) // run once on mount
 
   const login = useCallback(async (email, password) => {

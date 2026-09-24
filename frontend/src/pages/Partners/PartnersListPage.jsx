@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import api from '../../api/client'
+import { usePermissions } from '../../context/PermissionContext'
 import {
   Users, Search, Plus, Filter,
   Building2, MapPin, CheckCircle2, Clock3, Ban,
@@ -31,6 +32,7 @@ function StatusBadge({ status }) {
 }
 
 export default function PartnersListPage() {
+  const { can } = usePermissions()
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [status, setStatus] = useState('')
@@ -232,12 +234,16 @@ export default function PartnersListPage() {
                           <Link to={`/partners/${p.id}`} className="pm-icon-btn d-inline-flex" style={{ width: 32, height: 32 }} title="View Details">
                             <Eye size={16} />
                           </Link>
-                          <Link to={`/partners/${p.id}/edit`} className="pm-icon-btn d-inline-flex text-primary" style={{ width: 32, height: 32, borderColor: 'rgba(59,130,246,0.3)' }} title="Edit">
-                            <Edit size={16} />
-                          </Link>
-                          <button onClick={() => handleDelete(p.id)} className="pm-icon-btn d-inline-flex text-danger" style={{ width: 32, height: 32, borderColor: 'rgba(239,68,68,0.3)' }} title="Delete">
-                            <Trash2 size={16} />
-                          </button>
+                          {can('partner.update') && (
+                            <Link to={`/partners/${p.id}/edit`} className="pm-icon-btn d-inline-flex text-primary" style={{ width: 32, height: 32, borderColor: 'rgba(59,130,246,0.3)' }} title="Edit">
+                              <Edit size={16} />
+                            </Link>
+                          )}
+                          {can('partner.delete') && (
+                            <button onClick={() => handleDelete(p.id)} className="pm-icon-btn d-inline-flex text-danger" style={{ width: 32, height: 32, borderColor: 'rgba(239,68,68,0.3)' }} title="Delete">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

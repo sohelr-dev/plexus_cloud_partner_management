@@ -9,6 +9,7 @@ import PartnerEditPage from './pages/Partners/PartnerEditPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
+import { PermissionProvider } from './context/PermissionContext'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RoleRoute, { ForbiddenPage } from './routes/RoleRoute'
 
@@ -59,36 +60,38 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forbidden" element={<ForbiddenPage />} />
+          <PermissionProvider>
+            <Routes>
+              {/* Public */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/forbidden" element={<ForbiddenPage />} />
 
-            {/* Protected shell */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/partners" element={<PartnersListPage />} />
-                <Route path="/partners/new" element={<PartnerFormPage />} />
-                <Route path="/partners/:id" element={<PartnerDetailsPage />} />
-                <Route path="/partners/:id/edit" element={<PartnerEditPage />} />
-                {Object.entries(placeholders).map(([path, props]) => (
-                  <Route
-                    key={path}
-                    path={path}
-                    element={
-                      <RoleRoute allow={['*']}>
-                        <PlaceholderPage {...props} />
-                      </RoleRoute>
-                    }
-                  />
-                ))}
+              {/* Protected shell */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/partners" element={<PartnersListPage />} />
+                  <Route path="/partners/new" element={<PartnerFormPage />} />
+                  <Route path="/partners/:id" element={<PartnerDetailsPage />} />
+                  <Route path="/partners/:id/edit" element={<PartnerEditPage />} />
+                  {Object.entries(placeholders).map(([path, props]) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={
+                        <RoleRoute allow={['*']}>
+                          <PlaceholderPage {...props} />
+                        </RoleRoute>
+                      }
+                    />
+                  ))}
+                </Route>
               </Route>
-            </Route>
 
-            {/* Unknown → back to shell root */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Unknown → back to shell root */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </PermissionProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>

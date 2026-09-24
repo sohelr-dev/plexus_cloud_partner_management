@@ -1,43 +1,52 @@
-import { useMemo } from 'react'
+import { createContext, useContext } from 'react'
 import { useAuth } from './AuthContext'
 
-export function usePermissions() {
+const PermissionContext = createContext(null)
+
+/**
+ * usePermissions() — returns helpers to check roles and permissions.
+ *
+ * isRole('finance')                → true if user has that role
+ * isRole(['finance', 'accounts'])  → true if user has ANY of those roles
+ * can('commission.approve')        → true if user's permissions include it
+ * can(['payment.create', 'payment.approve']) → true if user has ANY
+ */
+export function PermissionProvider({ children }) {
   const { user } = useAuth()
 
-  return useMemo(() => {
-    const permissions = new Set(user?.permissions ?? [])
-    const roles = new Set(user?.roles ?? [])
-    const hasWildcard = permissions.has('*')
+  const roles       = user?.roles       ?? []
+  const permissions = user?.permissions ?? []
 
-    return {
-      roles: [...roles],
-      permissions: [...permissions],
+  /**
+   * Check if the current user has one (or any) of the given roles.
+   */
+  function isRole(role) {
+    if (!role) return true
+    const wanted = Array.isArray(role) ? role : [role]
+    // super-admin short-circuit
+    if (roles.includes('super-admin')) return true
+    return wanted.some((r) => roles.includes(r))
+  }
 
-      /** Has one of the given permissions (single string or array) */
-      can(perms) {
-        if (hasWildcard) return true
-        const list = Array.isArray(perms) ? perms : [perms]
-        return list.some((p) => permissions.has(p))
-      },
+  /**
+   * Check if the current user has one (or any) of the given permission strings.
+   */
+  function can(permission) {
+    if (!permission) return true
+    const wanted = Array.isArray(permission) ? permission : [permission]
+    if (roles.includes('super-admin')) return true
+    return wanted.some((p) => permissions.includes(p))
+  }
 
-      /** Has one of the given roles (single string or array) */
-      isRole(roleOrRoles) {
-        const list = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles]
-        return list.some((r) => roles.has(r))
-      },
-
-      /** Any permission starting with the module prefix, e.g. module('partner') */
-      canModule(module) {
-        if (hasWildcard) return true
-        return [...permissions].some((p) => p.startsWith(`${module}.`))
-      },
-    }
-  }, [user])
+  return (
+    <PermissionContext.Provider value={{ roles, permissions, isRole, can }}>
+      {children}
+    </PermissionContext.Provider>
+  )
 }
 
-
-export function Can({ permission, module, fallback = null, children }) {
-  const { can, canModule } = usePermissions()
-  const allowed = permission ? can(permission) : module ? canModule(module) : true
-  return allowed ? children : fallback
+export function usePermissions() {
+  const ctx = useContext(PermissionContext)
+  if (!ctx) throw new Error('usePermissions must be used within PermissionProvider')
+  return ctx
 }
