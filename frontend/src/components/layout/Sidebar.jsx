@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Network,
   Settings,
+  ShieldAlert,
   Users,
   Wallet,
   X,
@@ -34,6 +35,7 @@ const navGroups = [
   {
     title: 'Administration',
     items: [
+      { label: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert },
       { label: 'Reports', to: '/reports', icon: BarChart3 },
       { label: 'Settings', to: '/settings', icon: Settings },
     ]

@@ -6,6 +6,7 @@ import PartnersListPage from './pages/Partners/PartnersListPage'
 import PartnerFormPage from './pages/Partners/PartnerFormPage'
 import PartnerDetailsPage from './pages/Partners/PartnerDetailsPage'
 import PartnerEditPage from './pages/Partners/PartnerEditPage'
+import AuditLogsPage from './pages/AuditLogs/AuditLogsPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
@@ -74,6 +75,14 @@ export default function App() {
                   <Route path="/partners/new" element={<PartnerFormPage />} />
                   <Route path="/partners/:id" element={<PartnerDetailsPage />} />
                   <Route path="/partners/:id/edit" element={<PartnerEditPage />} />
+                  <Route
+                    path="/audit-logs"
+                    element={
+                      <RoleRoute permission="audit-log.view">
+                        <AuditLogsPage />
+                      </RoleRoute>
+                    }
+                  />
                   {Object.entries(placeholders).map(([path, props]) => (
                     <Route
                       key={path}
