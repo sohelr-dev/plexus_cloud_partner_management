@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Partner\PartnerController;
@@ -21,11 +22,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Partners ---
     Route::prefix('partners')->controller(PartnerController::class)->group(function () {
-        Route::get('/',                    'index')->name('partners.index');
-        Route::post('/',                   'store')->name('partners.store');
-        Route::get('/{partner}',           'show')->name('partners.show');
-        Route::match(['put','patch'], '/{partner}', 'update')->name('partners.update');
-        Route::delete('/{partner}',        'destroy')->name('partners.destroy');
+        Route::get('/lookups',              'lookups')->middleware('permission:partner.view')->name('partners.lookups');
+        Route::get('/',                    'index')->middleware('permission:partner.view')->name('partners.index');
+        Route::post('/',                   'store')->middleware('permission:partner.create')->name('partners.store');
+        Route::get('/{partner}',           'show')->middleware('permission:partner.view')->name('partners.show');
+        Route::match(['put','patch'], '/{partner}', 'update')->middleware('permission:partner.update')->name('partners.update');
+        Route::put('/{partner}/status',    'changeStatus')->middleware('permission:partner.update')->name('partners.status');
+        Route::post('/{partner}/approve',   'approve')->middleware('permission:partner.approve')->name('partners.approve');
+        Route::delete('/{partner}',        'destroy')->middleware('permission:partner.delete')->name('partners.destroy');
     });
+
+    // --- Audit Logs ---
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit-log.view')
+        ->name('audit-logs.index');
 
 });

@@ -15,28 +15,48 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
+            LookupSeeder::class,
         ]);
 
-        // Default admin user
-        $admin = User::updateOrCreate(
-            ['email' => 'admin@plexuscloud.com'],
+        $users = [
             [
                 'name'     => 'Super Admin',
-                'password' => Hash::make('password'),
-            ]
-        );
-
-        $admin->assignRole('super-admin');
-
-        // Demo manager user
-        $manager = User::updateOrCreate(
-            ['email' => 'manager@plexuscloud.com'],
+                'email'    => 'admin@plexuscloud.com',
+                'role'     => 'super-admin',
+            ],
             [
-                'name'     => 'Demo Manager',
-                'password' => Hash::make('password'),
-            ]
-        );
+                'name'     => 'Partner Manager',
+                'email'    => 'manager@plexuscloud.com',
+                'role'     => 'partner-manager',
+            ],
+            [
+                'name'     => 'Finance Executive',
+                'email'    => 'finance@plexuscloud.com',
+                'role'     => 'finance',
+            ],
+            [
+                'name'     => 'Sales Lead',
+                'email'    => 'sales@plexuscloud.com',
+                'role'     => 'sales',
+            ],
+            [
+                'name'     => 'Network Engineer',
+                'email'    => 'network@plexuscloud.com',
+                'role'     => 'network',
+            ],
+        ];
 
-        $manager->assignRole('manager');
+        foreach ($users as $userData) {
+            $user = User::updateOrCreate(
+                ['email' => $userData['email']],
+                [
+                    'name'     => $userData['name'],
+                    'password' => Hash::make('password'),
+                    'status'   => 'Active',
+                ]
+            );
+
+            $user->syncRoles([$userData['role']]);
+        }
     }
 }
