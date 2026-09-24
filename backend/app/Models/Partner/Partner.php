@@ -73,6 +73,13 @@ class Partner extends Model
         return $this->hasOne(PartnerProfile::class);
     }
 
+    public function businessModels(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Lookup\BusinessModel::class, 'partner_business_models')
+            ->withPivot('is_active', 'assigned_at', 'assigned_by')
+            ->withTimestamps();
+    }
+
     public function riskIndicators(): HasMany
     {
         return $this->hasMany(PartnerRiskIndicator::class);

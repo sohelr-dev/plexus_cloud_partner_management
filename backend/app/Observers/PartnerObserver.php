@@ -60,4 +60,9 @@ class PartnerObserver
             entity: $partner,
         );
     }
+
+    private function clean(array $attributes): array
+    {
+        return array_diff_key($attributes, array_flip(self::EXCLUDE));
+    }
 }

@@ -41,6 +41,7 @@ class PartnerResource extends JsonResource
 
             // Loaded relations only (avoid N+1 surprises)
             'profile' => new PartnerProfileResource($this->whenLoaded('profile')),
+            'business_models' => $this->whenLoaded('businessModels'),
             'territory' => $this->whenLoaded('territory'),
             'zone' => $this->whenLoaded('zone'),
             'area' => $this->whenLoaded('area'),

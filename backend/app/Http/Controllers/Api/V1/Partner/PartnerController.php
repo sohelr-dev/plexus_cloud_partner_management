@@ -9,19 +9,23 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\JsonResponse;
 
-/**
- * PartnerController — CRUD for partners.
- * Routes: /api/v1/partners (auth:sanctum)
- *
- * Column names strictly match migration:
- * 2026_09_24_000002_create_partners_and_profiles.php
- */
 class PartnerController extends Controller
 {
+    public function lookups(): JsonResponse
+    {
+        return response()->json([
+            'business_models'   => \App\Models\Lookup\BusinessModel::where('is_active', true)->select('id', 'name', 'description')->get(),
+            'areas'             => \App\Models\Lookup\Area::select('id', 'name')->get(),
+            'zones'             => \App\Models\Lookup\Zone::select('id', 'name')->get(),
+            'territories'       => \App\Models\Lookup\Territory::select('id', 'name')->get(),
+            'account_managers'  => \App\Models\User::select('id', 'name', 'email')->get(),
+        ]);
+    }
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $q = Partner::query()
-            ->with(['profile', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager']);
+            ->with(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager']);
 
         // Full-text search across key identifier columns
         if ($search = trim((string) $request->query('search'))) {
@@ -56,7 +60,7 @@ class PartnerController extends Controller
     }
 
     /**
-     * POST /partners — create a new partner.
+     *  create a new partner.
      */
     public function store(Request $request): PartnerResource
     {
@@ -64,34 +68,43 @@ class PartnerController extends Controller
 
         $partner = Partner::create($data);
 
+        // Sync Business Models if provided (BR-01)
+        if ($request->has('business_model_ids')) {
+            $partner->businessModels()->sync($request->input('business_model_ids', []));
+        }
+
         // Create 1:1 profile row if profile data provided
         if (! empty($data['profile'])) {
             $partner->profile()->create($data['profile']);
         }
 
         return new PartnerResource(
-            $partner->load(['profile', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
+            $partner->load(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
         );
     }
 
     /**
-     * GET /partners/{partner} — single partner with all relations.
+     *  single partner with all relations.
      */
     public function show(Partner $partner): PartnerResource
     {
         return new PartnerResource(
-            $partner->load(['profile', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager', 'riskIndicators', 'insights'])
+            $partner->load(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager', 'riskIndicators', 'insights'])
         );
     }
 
     /**
-     * PUT/PATCH /partners/{partner} — update partner (+ profile if provided).
+     * update partner (+ profile if provided).
      */
     public function update(Request $request, Partner $partner): PartnerResource
     {
         $data = $this->validated($request, $partner->id);
 
         $partner->update($data);
+
+        if ($request->has('business_model_ids')) {
+            $partner->businessModels()->sync($request->input('business_model_ids', []));
+        }
 
         if (! empty($data['profile'])) {
             $partner->profile()->updateOrCreate(
@@ -101,12 +114,70 @@ class PartnerController extends Controller
         }
 
         return new PartnerResource(
-            $partner->fresh(['profile', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
+            $partner->fresh(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
         );
     }
 
     /**
-     * DELETE /partners/{partner} — soft delete (deleted_at set, row kept — BR-06).
+     * PUT Change partner status with audit reason.
+     */
+    public function changeStatus(Request $request, Partner $partner): PartnerResource
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:Draft,Pending Approval,Under Review,Approved,Active,Suspended,Blocked,Inactive,Terminated'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $oldStatus = $partner->status;
+        $partner->status = $validated['status'];
+        $partner->save();
+
+        if (! empty($validated['reason'])) {
+            \App\Services\AuditLogService::log(
+                action: 'status_changed',
+                entity: $partner,
+                oldValues: ['status' => $oldStatus],
+                newValues: ['status' => $validated['status']],
+                reason: $validated['reason']
+            );
+        }
+
+        return new PartnerResource(
+            $partner->fresh(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
+        );
+    }
+
+    /**
+     *Approve or Reject a partner request.
+     */
+    public function approve(Request $request, Partner $partner): PartnerResource
+    {
+        $validated = $request->validate([
+            'decision' => ['required', 'string', 'in:Approved,Rejected'],
+            'reason'   => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $newStatus = $validated['decision'] === 'Approved' ? 'Active' : 'Rejected';
+        $oldStatus = $partner->status;
+
+        $partner->status = $newStatus;
+        $partner->save();
+
+        \App\Services\AuditLogService::log(
+            action: strtolower($validated['decision']),
+            entity: $partner,
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $newStatus],
+            reason: $validated['reason'] ?? "Partner request {$validated['decision']}"
+        );
+
+        return new PartnerResource(
+            $partner->fresh(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
+        );
+    }
+
+    /**
+     * soft delete (deleted_at set, row kept — BR-06).
      */
     public function destroy(Partner $partner): JsonResponse
     {
@@ -117,7 +188,7 @@ class PartnerController extends Controller
 
     // Private helpers
     /**
-     * Validation rules — column names match partners + partner_profiles migrations exactly.
+     * Validation rules
      */
     private function validated(Request $request, ?int $ignoreId = null): array
     {
@@ -144,6 +215,8 @@ class PartnerController extends Controller
             'partner_since'           => ['nullable', 'date'],
             'status'                  => ['nullable', 'in:Draft,Pending Approval,Active,Suspended,Blocked,Inactive,Terminated'],
             'logo_path'               => ['nullable', 'string', 'max:500'],
+            'business_model_ids'      => ['nullable', 'array'],
+            'business_model_ids.*'    => ['exists:business_models,id'],
         ];
 
         // Nested profile validation — columns match partner_profiles migration exactly
