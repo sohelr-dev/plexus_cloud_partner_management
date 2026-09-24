@@ -10,9 +10,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Partner — core entity of the Partner Management module.
- *
- * Column names strictly match:
- * 2026_09_24_000002_create_partners_and_profiles.php
  */
 class Partner extends Model
 {
@@ -32,9 +29,6 @@ class Partner extends Model
         });
     }
 
-    /**
-     * $fillable columns strictly match the partners migration.
-     */
     protected $fillable = [
         'partner_id',          // PT-000125 (unique, auto-generated)
         'partner_code',        // ABC-00125 (unique)
@@ -85,7 +79,6 @@ class Partner extends Model
         return $this->hasMany(PartnerRiskIndicator::class);
     }
 
-    /** 1:N AI/data-driven insights */
     public function insights(): HasMany
     {
         return $this->hasMany(PartnerInsight::class);
@@ -126,5 +119,32 @@ class Partner extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'updated_by');
+    }
+
+    // --- Financial Relationships 
+
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(\App\Models\Financial\PartnerRevenue::class);
+    }
+
+    public function costs(): HasMany
+    {
+        return $this->hasMany(\App\Models\Financial\PartnerCost::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Financial\PartnerPayment::class);
+    }
+
+    public function profitLosses(): HasMany
+    {
+        return $this->hasMany(\App\Models\Financial\PartnerProfitLoss::class);
+    }
+
+    public function rois(): HasMany
+    {
+        return $this->hasMany(\App\Models\Financial\PartnerRoi::class);
     }
 }
