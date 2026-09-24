@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@plexuscloud.com'],
             [
                 'name'     => 'Super Admin',
-                'password' => Hash::make('Plexus@2025'),
+                'password' => Hash::make('password'),
             ]
         );
 
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'manager@plexuscloud.com'],
             [
                 'name'     => 'Demo Manager',
-                'password' => Hash::make('Manager@2025'),
+                'password' => Hash::make('password'),
             ]
         );
 
