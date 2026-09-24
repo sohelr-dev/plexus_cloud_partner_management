@@ -1,8 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import PlaceholderPage from './components/common/PlaceholderPage'
+import PartnersListPage from './pages/Partners/PartnersListPage'
+import PartnerFormPage from './pages/Partners/PartnerFormPage'
+import PartnerDetailsPage from './pages/Partners/PartnerDetailsPage'
+import PartnerEditPage from './pages/Partners/PartnerEditPage'
 import Dashboard from './pages/Dashboard'
+import LoginPage from './pages/Auth/LoginPage'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './routes/ProtectedRoute'
+import RoleRoute, { ForbiddenPage } from './routes/RoleRoute'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,11 +22,6 @@ const queryClient = new QueryClient({
 })
 
 const placeholders = {
-  '/partners': {
-    title: 'Partners',
-    description: 'Partner list, search, filters and create wizard .',
-    items: ['Partner List', 'Create Wizard', 'Partner Profile (Tab-based)'],
-  },
   '/bandwidth': {
     title: 'Bandwidth',
     description: 'Allocation, upgrade/downgrade workflow .',
@@ -55,18 +58,38 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            {Object.entries(placeholders).map(([path, props]) => (
-              <Route
-                key={path}
-                path={path}
-                element={<PlaceholderPage {...props} />}
-              />
-            ))}
-          </Route>
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forbidden" element={<ForbiddenPage />} />
+
+            {/* Protected shell */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/partners" element={<PartnersListPage />} />
+                <Route path="/partners/new" element={<PartnerFormPage />} />
+                <Route path="/partners/:id" element={<PartnerDetailsPage />} />
+                <Route path="/partners/:id/edit" element={<PartnerEditPage />} />
+                {Object.entries(placeholders).map(([path, props]) => (
+                  <Route
+                    key={path}
+                    path={path}
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <PlaceholderPage {...props} />
+                      </RoleRoute>
+                    }
+                  />
+                ))}
+              </Route>
+            </Route>
+
+            {/* Unknown → back to shell root */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthProvider>
       </Router>
     </QueryClientProvider>
   )

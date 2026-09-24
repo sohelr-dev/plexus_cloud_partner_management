@@ -18,6 +18,20 @@ class Partner extends Model
 {
     use SoftDeletes;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->partner_id)) {
+                $model->partner_id = 'PT-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+            }
+            if (empty($model->partner_code)) {
+                $model->partner_code = 'P-' . strtoupper(\Illuminate\Support\Str::random(6));
+            }
+        });
+    }
+
     /**
      * $fillable columns strictly match the partners migration.
      */
