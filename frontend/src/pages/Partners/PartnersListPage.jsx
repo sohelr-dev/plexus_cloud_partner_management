@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import api from '../../api/client'
 import { usePermissions } from '../../context/PermissionContext'
 import {
-  Users, Search, Plus, Filter,
+  Users, Search, Plus, Filter, Download, X,
   Building2, MapPin, CheckCircle2, Clock3, Ban,
   Eye, MoreHorizontal, AlertCircle, RefreshCw, Edit, Trash2, ShieldCheck
 } from 'lucide-react'
@@ -41,11 +41,20 @@ export default function PartnersListPage() {
   const [page, setPage] = useState(1)
   const [modalState, setModalState] = useState({ isOpen: false, partner: null, mode: 'approve' })
 
+  // Instant Live Search with 300ms Debounce (Modern Search Experience)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
   const params = useMemo(() => {
     const p = { page }
     if (search) p.search = search
     if (status) p.status = status
-    if (type) p.type = type
+    if (type) p.partner_type = type
     return p
   }, [page, search, status, type])
 
@@ -73,18 +82,40 @@ export default function PartnersListPage() {
     }
   }
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault()
-    setSearch(searchInput.trim())
-    setPage(1)
-  }
-
   const resetFilters = () => {
     setSearchInput('')
     setSearch('')
     setStatus('')
     setType('')
     setPage(1)
+  }
+
+  const exportCSV = () => {
+    if (!rows.length) return
+    const headers = ['Partner ID', 'Partner Code', 'Name', 'Type', 'Category', 'Contact Person', 'Email', 'Phone', 'Status', 'Health Score']
+    const csvRows = [
+      headers.join(','),
+      ...rows.map(r => [
+        `"${r.partner_id || ''}"`,
+        `"${r.partner_code || ''}"`,
+        `"${r.partner_name || ''}"`,
+        `"${r.partner_type || ''}"`,
+        `"${r.partner_category || ''}"`,
+        `"${r.contact_person || ''}"`,
+        `"${r.email || ''}"`,
+        `"${r.contact_number || ''}"`,
+        `"${r.status || ''}"`,
+        `"${r.health_score ?? 100}%"`
+      ].join(','))
+    ]
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `partner_directory_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
   }
 
   const hasFilters = Boolean(search || status || type)
@@ -104,50 +135,88 @@ export default function PartnersListPage() {
         </Link>
       </div>
 
-      {/* Toolbar */}
-      <div className="pm-card" style={{ padding: '1rem 1.25rem' }}>
-        <div className="d-flex flex-column flex-lg-row gap-3 align-items-lg-center">
-          <form className="pm-search-wrap" onSubmit={handleSearchSubmit}>
-            <Search size={16} className="pm-search-icon" />
-            <input
-              type="search"
-              className="pm-auth-input pm-search-input"
-              placeholder="Search partner name, code…"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-          </form>
+      {/* Modern Instant Search & Filter Toolbar */}
+      <div className="card border-0 shadow-sm mb-4">
+        <div className="card-body p-3">
+          <div className="row g-3 align-items-center">
+            {/* Search Bar Input Group with Live Instant Search */}
+            <div className="col-12 col-lg-5">
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0 text-muted ps-3">
+                  <Search size={16} />
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0 ps-2 bg-light"
+                  placeholder="Type to search partner name, code, ID, contact..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    className="btn btn-light border border-start-0 text-muted"
+                    onClick={() => setSearchInput('')}
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
 
-          <div className="d-flex gap-2 flex-wrap align-items-center ms-lg-auto">
-            <Filter size={16} className="text-secondary d-none d-lg-block me-1" />
-            <select
-              className="pm-auth-input pm-filter-select"
-              value={status}
-              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            >
-              <option value="">All Statuses</option>
-              {Object.entries(STATUS_META).map(([val, m]) => (
-                <option key={val} value={val}>{m.label}</option>
-              ))}
-            </select>
+            {/* Filter Dropdowns & Export Action */}
+            <div className="col-12 col-lg-7">
+              <div className="d-flex gap-2 flex-wrap align-items-center justify-content-lg-end">
+                <div className="d-flex align-items-center gap-1 me-1">
+                  <Filter size={15} className="text-secondary" />
+                  <span className="text-muted small fw-medium d-none d-sm-inline">Filters:</span>
+                </div>
 
-            <select
-              className="pm-auth-input pm-filter-select"
-              value={type}
-              onChange={(e) => { setType(e.target.value); setPage(1); }}
-            >
-              <option value="">All Types</option>
-              <option value="ISP">ISP</option>
-              <option value="NTN">NTN</option>
-              <option value="reseller">Reseller</option>
-              <option value="corporate">Corporate</option>
-            </select>
+                <select
+                  className="form-select form-select-sm w-auto"
+                  value={status}
+                  onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Pending Approval">Pending Approval</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Suspended">Suspended</option>
+                  <option value="Blocked">Blocked</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Terminated">Terminated</option>
+                </select>
 
-            {hasFilters && (
-              <button className="pm-btn pm-btn-ghost pm-btn-sm" onClick={resetFilters}>
-                Reset
-              </button>
-            )}
+                <select
+                  className="form-select form-select-sm w-auto"
+                  value={type}
+                  onChange={(e) => { setType(e.target.value); setPage(1); }}
+                >
+                  <option value="">All Partner Types</option>
+                  <option value="Reseller">Reseller</option>
+                  <option value="Distributor">Distributor</option>
+                  <option value="ISP">ISP</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Individual">Individual</option>
+                </select>
+
+                {hasFilters && (
+                  <button className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onClick={resetFilters}>
+                    <RefreshCw size={13} /> Reset
+                  </button>
+                )}
+
+                <button
+                  className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 ms-lg-1"
+                  onClick={exportCSV}
+                  title="Export partner directory to CSV"
+                >
+                  <Download size={14} /> Export CSV
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
