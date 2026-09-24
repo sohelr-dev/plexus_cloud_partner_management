@@ -6,8 +6,9 @@ import { usePermissions } from '../../context/PermissionContext'
 import {
   Users, Search, Plus, Filter,
   Building2, MapPin, CheckCircle2, Clock3, Ban,
-  Eye, MoreHorizontal, AlertCircle, RefreshCw, Edit, Trash2
+  Eye, MoreHorizontal, AlertCircle, RefreshCw, Edit, Trash2, ShieldCheck
 } from 'lucide-react'
+import StatusActionModal from '../../components/common/StatusActionModal'
 
 const STATUS_META = {
   active: { label: 'Active', cls: 'pm-badge-success' },
@@ -38,6 +39,7 @@ export default function PartnersListPage() {
   const [status, setStatus] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
+  const [modalState, setModalState] = useState({ isOpen: false, partner: null, mode: 'approve' })
 
   const params = useMemo(() => {
     const p = { page }
@@ -234,6 +236,16 @@ export default function PartnersListPage() {
                           <Link to={`/partners/${p.id}`} className="pm-icon-btn d-inline-flex" style={{ width: 32, height: 32 }} title="View Details">
                             <Eye size={16} />
                           </Link>
+                          {['Pending Approval', 'Under Review'].includes(p.status) && (
+                            <button
+                              onClick={() => setModalState({ isOpen: true, partner: p, mode: 'approve' })}
+                              className="pm-icon-btn d-inline-flex text-success"
+                              style={{ width: 32, height: 32, borderColor: 'rgba(16,185,129,0.3)' }}
+                              title="Approve / Reject Request"
+                            >
+                              <ShieldCheck size={16} />
+                            </button>
+                          )}
                           {can('partner.update') && (
                             <Link to={`/partners/${p.id}/edit`} className="pm-icon-btn d-inline-flex text-primary" style={{ width: 32, height: 32, borderColor: 'rgba(59,130,246,0.3)' }} title="Edit">
                               <Edit size={16} />
@@ -278,6 +290,14 @@ export default function PartnersListPage() {
       </div>
       
       {isFetching && !isLoading && <div className="pm-fetching-bar" />}
+
+      {/* Status Action & Approval Modal */}
+      <StatusActionModal
+        isOpen={modalState.isOpen}
+        mode={modalState.mode}
+        partner={modalState.partner}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }
