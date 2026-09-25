@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Partner\PartnerController;
 use App\Http\Controllers\Api\V1\Partner\SupportCenterController;
 use App\Http\Controllers\Api\V1\Bandwidth\BandwidthController;
 use App\Http\Controllers\Api\V1\Equipment\EquipmentController;
+use App\Http\Controllers\Api\V1\Marketing\MarketingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, '__invoke'])->name('api.health');
@@ -162,6 +163,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Global Support Center Dashboard ---
     Route::get('/support-centers/global-dashboard', [SupportCenterController::class, 'globalDashboard'])->middleware('permission:partner.view');
+
+    // --- Marketing Module ---
+    Route::prefix('marketing')->group(function () {
+        Route::get('/{partner}/summary',             [MarketingController::class, 'summary'])->middleware('permission:partner.view');
+        Route::get('/{partner}/customer-growth',     [MarketingController::class, 'getCustomerGrowth'])->middleware('permission:partner.view');
+        Route::post('/{partner}/customer-growth',    [MarketingController::class, 'storeCustomerMetric'])->middleware('permission:partner.update');
+        Route::get('/{partner}/sales-performance',   [MarketingController::class, 'getSalesPerformance'])->middleware('permission:partner.view');
+        Route::post('/{partner}/sales-performance',  [MarketingController::class, 'storeSalesMetric'])->middleware('permission:partner.update');
+        Route::get('/{partner}/package-performance', [MarketingController::class, 'getPackagePerformance'])->middleware('permission:partner.view');
+        Route::get('/{partner}/area-metrics',        [MarketingController::class, 'getAreaMetrics'])->middleware('permission:partner.view');
+        
+        Route::get('/{partner}/campaigns',           [MarketingController::class, 'getCampaigns'])->middleware('permission:partner.view');
+        Route::post('/{partner}/campaigns',          [MarketingController::class, 'storeCampaign'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/campaigns/{campaign}', [MarketingController::class, 'updateCampaign'])->middleware('permission:partner.update');
+        Route::delete('/campaigns/{campaign}',       [MarketingController::class, 'destroyCampaign'])->middleware('permission:partner.update');
+    });
 
     // --- Audit Logs ---
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
