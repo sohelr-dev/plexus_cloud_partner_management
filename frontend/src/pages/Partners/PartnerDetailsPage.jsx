@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -33,6 +33,9 @@ import {
 import StatusActionModal from '../../components/common/StatusActionModal'
 import api from '../../api/client'
 import { fetchPartnerPnL, fetchRevenues, createRevenue, fetchCosts, createCost, fetchPayments, createPayment } from '../../api/financial'
+import { fetchBandwidthSummary, createBandwidthAllocation, requestBandwidthChange, approveBandwidthChange, rejectBandwidthChange } from '../../api/bandwidth'
+import { fetchEquipmentSummary, createEquipmentAsset, registerEndDevice, logEquipmentMaintenance } from '../../api/equipment'
+import { fetchCommissionSummary, createCommissionRule, createCommission, approveCommission, rejectCommission, payCommission } from '../../api/commission'
 import { usePermissions } from '../../context/PermissionContext'
 
 const TABS = [
@@ -131,6 +134,171 @@ export default function PartnerDetailsPage() {
       setPayForm({ payment_method: 'Bank Transfer', amount: '', reference_number: '', remarks: '' })
     }
   })
+
+  // --- Bandwidth State & Query ---
+  const [activeBwModal, setActiveBwModal] = useState(null) // 'allocate' | 'change'
+  const [bwAllocForm, setBwAllocForm] = useState({ service: 'Internet', allocated_mbps: '', ratio: '1:1', price: '', cost: '', work_order_id: '' })
+  const [bwChangeForm, setBwChangeForm] = useState({ allocation_id: '', new_mbps: '', change_type: 'Upgrade', reason: '' })
+
+  const { data: bandwidthSummaryRes } = useQuery({
+    queryKey: ['bandwidthSummary', id],
+    queryFn: () => fetchBandwidthSummary(id),
+    enabled: activeTab === 'bandwidth',
+  })
+  const bwData = bandwidthSummaryRes?.data || {}
+
+  const addBwAllocMutation = useMutation({
+    mutationFn: (data) => createBandwidthAllocation(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bandwidthSummary', id])
+      setActiveBwModal(null)
+      setBwAllocForm({ service: 'Internet', allocated_mbps: '', ratio: '1:1', price: '', cost: '', work_order_id: '' })
+    },
+  })
+
+  const bwChangeReqMutation = useMutation({
+    mutationFn: (data) => requestBandwidthChange(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bandwidthSummary', id])
+      setActiveBwModal(null)
+      setBwChangeForm({ allocation_id: '', new_mbps: '', change_type: 'Upgrade', reason: '' })
+    },
+  })
+
+  const approveBwMutation = useMutation({
+    mutationFn: ({ changeId, reason }) => approveBandwidthChange(changeId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bandwidthSummary', id])
+    },
+  })
+
+  const rejectBwMutation = useMutation({
+    mutationFn: ({ changeId, reason }) => rejectBandwidthChange(changeId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bandwidthSummary', id])
+    },
+  })
+
+  // --- Equipment & Devices State & Query ---
+  const [activeEqModal, setActiveEqModal] = useState(null) // 'equipment' | 'device'
+  const [eqForm, setEqForm] = useState({
+    equipment_type: 'Router',
+    serial_number: '',
+    mac_address: '',
+    manufacturer: '',
+    model: '',
+    purchase_cost: '',
+    ownership: 'Company Owned',
+    warranty_end: '',
+    location: '',
+  })
+  const [devForm, setDevForm] = useState({
+    device_type: 'ONU',
+    identifier: '',
+    status: 'Active',
+  })
+
+  const { data: equipmentSummaryRes } = useQuery({
+    queryKey: ['equipmentSummary', id],
+    queryFn: () => fetchEquipmentSummary(id),
+    enabled: activeTab === 'devices',
+  })
+  const eqData = equipmentSummaryRes?.data || {}
+
+  const addEqMutation = useMutation({
+    mutationFn: (data) => createEquipmentAsset(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['equipmentSummary', id])
+      setActiveEqModal(null)
+      setEqForm({ equipment_type: 'Router', serial_number: '', mac_address: '', manufacturer: '', model: '', purchase_cost: '', ownership: 'Company Owned', warranty_end: '', location: '' })
+    },
+  })
+
+  const addDevMutation = useMutation({
+    mutationFn: (data) => registerEndDevice(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['equipmentSummary', id])
+      setActiveEqModal(null)
+      setDevForm({ device_type: 'ONU', identifier: '', status: 'Active' })
+    },
+  })
+
+  // --- Commission State & Query---
+  const [activeCommModal, setActiveCommModal] = useState(null) // 'addRule' | 'addCommission' | 'pay'
+  const [commRuleForm, setCommRuleForm] = useState({
+    rule_name: '',
+    service: '',
+    commission_type: 'Percentage',
+    rate: '',
+    fixed_amount: '',
+    maximum_limit: '',
+    effective_date: '',
+    expiry_date: '',
+    status: 'Active',
+  })
+  const [commForm, setCommForm] = useState({
+    rule_id: '',
+    source_reference: '',
+    source_amount: '',
+    commission_amount: '',
+    period_month: new Date().getMonth() + 1,
+    period_year: new Date().getFullYear(),
+    remarks: '',
+  })
+  const [commPayForm, setCommPayForm] = useState({
+    commissionId: null,
+    payment_date: new Date().toISOString().split('T')[0],
+    amount: '',
+    payment_method: 'Bank Transfer',
+    reference_number: '',
+  })
+  const [commActionId, setCommActionId] = useState(null)
+  const [commActionReason, setCommActionReason] = useState('')
+
+  const { data: commSummaryRes } = useQuery({
+    queryKey: ['commissionSummary', id],
+    queryFn: () => fetchCommissionSummary(id),
+    enabled: activeTab === 'commission',
+  })
+  const commData = commSummaryRes?.data || {}
+
+  const addCommRuleMutation = useMutation({
+    mutationFn: (data) => createCommissionRule(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['commissionSummary', id])
+      setActiveCommModal(null)
+      setCommRuleForm({ rule_name: '', service: '', commission_type: 'Percentage', rate: '', fixed_amount: '', maximum_limit: '', effective_date: '', expiry_date: '', status: 'Active' })
+    },
+  })
+
+  const addCommMutation = useMutation({
+    mutationFn: (data) => createCommission(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['commissionSummary', id])
+      setActiveCommModal(null)
+      setCommForm({ rule_id: '', source_reference: '', source_amount: '', commission_amount: '', period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), remarks: '' })
+    },
+  })
+
+  const approveCommMutation = useMutation({
+    mutationFn: ({ cid, reason }) => approveCommission(cid, reason),
+    onSuccess: () => queryClient.invalidateQueries(['commissionSummary', id]),
+  })
+
+  const rejectCommMutation = useMutation({
+    mutationFn: ({ cid, reason }) => rejectCommission(cid, reason),
+    onSuccess: () => { queryClient.invalidateQueries(['commissionSummary', id]); setCommActionId(null); setCommActionReason('') },
+  })
+
+  const payCommMutation = useMutation({
+    mutationFn: ({ cid, data }) => payCommission(cid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['commissionSummary', id])
+      setActiveCommModal(null)
+      setCommPayForm({ commissionId: null, payment_date: new Date().toISOString().split('T')[0], amount: '', payment_method: 'Bank Transfer', reference_number: '' })
+    },
+  })
+
 
   if (isLoading) {
     return (
@@ -369,7 +537,7 @@ export default function PartnerDetailsPage() {
         {activeTab === 'overview' && (
           <div>
             <h5 className="fw-bold mb-4 d-flex align-items-center gap-2 text-primary">
-              <Activity size={20} /> Partner Overview & 5-Group Metric Dashboard (PRD Section 17)
+              <Activity size={20} /> Partner Overview & 5-Group Metric Dashboard
             </h5>
 
             {/* 5 Group Metrics Grid */}
@@ -665,6 +833,389 @@ export default function PartnerDetailsPage() {
             </div>
           </div>
         )}
+
+        {/* TAB 5: BANDWIDTH MANAGEMENT */}
+        {activeTab === 'bandwidth' && (
+          <div>
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+              <div>
+                <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
+                  <Wifi size={20} /> Bandwidth Sales & Allocation Engine
+                </h5>
+                <p className="text-muted small mb-0">Allocated bandwidth, ratio, utilization % and upgrade/downgrade approval workflow .</p>
+              </div>
+
+              <div className="d-flex gap-2">
+                <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveBwModal('allocate')}>
+                  <Plus size={14} /> Allocate Bandwidth
+                </button>
+                <button className="btn btn-sm btn-warning d-flex align-items-center gap-1 text-dark" onClick={() => setActiveBwModal('change')}>
+                  <TrendingUp size={14} /> Request Upgrade / Change
+                </button>
+              </div>
+            </div>
+
+            {/* Bandwidth KPIs */}
+            <div className="card border-0 shadow-sm mb-4 bg-light">
+              <div className="card-body p-3">
+                <div className="row g-3 text-center">
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">TOTAL ALLOCATED</div>
+                    <div className="fw-bold fs-4 text-primary">{bwData.total_allocated_mbps || 0} <span className="fs-6">Mbps</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">CURRENT USAGE</div>
+                    <div className="fw-bold fs-4 text-info">{bwData.total_used_mbps || 0} <span className="fs-6">Mbps</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">AVAILABLE CAPACITY</div>
+                    <div className="fw-bold fs-4 text-success">{bwData.total_available_mbps || 0} <span className="fs-6">Mbps</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">AVG UTILIZATION %</div>
+                    <div className="fw-bold fs-4 text-warning-emphasis">{bwData.utilization_percent || 0}%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Allocations Table */}
+            <h6 className="fw-bold mb-2">Active Allocations ({bwData.allocations?.length || 0})</h6>
+            <div className="table-responsive mb-4">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7">
+                  <tr>
+                    <th>Service</th>
+                    <th>Allocated (Mbps)</th>
+                    <th>Used (Mbps)</th>
+                    <th>Available (Mbps)</th>
+                    <th>Utilization</th>
+                    <th>Ratio</th>
+                    <th>Monthly Price</th>
+                    <th>Work Order #</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody className="fs-7">
+                  {bwData.allocations?.length > 0 ? (
+                    bwData.allocations.map((a) => (
+                      <tr key={a.id}>
+                        <td className="fw-bold text-dark">{a.service}</td>
+                        <td className="fw-bold text-primary">{Number(a.allocated_mbps).toLocaleString()} Mbps</td>
+                        <td>{Number(a.used_mbps).toLocaleString()} Mbps</td>
+                        <td className="text-success">{Number(a.available_mbps).toLocaleString()} Mbps</td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <div className="progress flex-grow-1" style={{ height: '6px' }}>
+                              <div className="progress-bar bg-warning" style={{ width: `${Math.min(100, a.utilization_percent)}%` }}></div>
+                            </div>
+                            <span className="fs-8 fw-semibold">{a.utilization_percent}%</span>
+                          </div>
+                        </td>
+                        <td><span className="badge bg-secondary-subtle text-secondary">{a.ratio || '1:1'}</span></td>
+                        <td className="fw-bold text-success">৳{Number(a.price).toLocaleString()}</td>
+                        <td className="small text-muted">{a.work_order_id || '-'}</td>
+                        <td><span className={`badge ${a.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>{a.status}</span></td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="9" className="text-center py-3 text-muted">No active bandwidth allocations found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Change Requests Table */}
+            <h6 className="fw-bold mb-2">Upgrade & Change Requests ({bwData.changes?.length || 0})</h6>
+            <div className="table-responsive mb-4">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7">
+                  <tr>
+                    <th>Request Date</th>
+                    <th>Service</th>
+                    <th>Type</th>
+                    <th>Previous → New Mbps</th>
+                    <th>Pre-Approval Impact Analysis </th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Actions (BR-08 Workflow)</th>
+                  </tr>
+                </thead>
+                <tbody className="fs-7">
+                  {bwData.changes?.length > 0 ? (
+                    bwData.changes.map((c) => (
+                      <tr key={c.id}>
+                        <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                        <td className="fw-semibold">{c.allocation?.service || 'N/A'}</td>
+                        <td><span className={`badge ${c.change_type === 'Upgrade' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>{c.change_type}</span></td>
+                        <td className="fw-bold">{c.previous_mbps} → {c.new_mbps} Mbps ({c.difference_mbps >= 0 ? `+${c.difference_mbps}` : c.difference_mbps})</td>
+                        <td className="small">
+                          <span className="text-success fw-semibold">Rev: +৳{Number(c.revenue_impact).toLocaleString()}</span> | <span className="text-danger fw-semibold">Cost: +৳{Number(c.cost_impact).toLocaleString()}</span> <br/>
+                          <span className="text-primary fw-bold">Net Profit Impact: +৳{Number(c.profit_impact).toLocaleString()}</span>
+                        </td>
+                        <td className="small">{c.reason || '-'}</td>
+                        <td>
+                          <span className={`badge ${c.status === 'Completed' || c.status === 'Approved' ? 'bg-success-subtle text-success' : c.status === 'Rejected' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td>
+                          {(c.status === 'Requested' || c.status === 'Capacity Check') && can('partner.approve') && (
+                            <div className="d-flex gap-1">
+                              <button
+                                className="btn btn-xs btn-success d-flex align-items-center gap-1"
+                                disabled={approveBwMutation.isLoading}
+                                onClick={() => approveBwMutation.mutate({ changeId: c.id, reason: 'Approved by Partner Manager' })}
+                              >
+                                <CheckCircle2 size={12} /> Approve
+                              </button>
+                              <button
+                                className="btn btn-xs btn-outline-danger d-flex align-items-center gap-1"
+                                disabled={rejectBwMutation.isLoading}
+                                onClick={() => {
+                                  const reason = prompt('Reason for rejection:')
+                                  if (reason) rejectBwMutation.mutate({ changeId: c.id, reason })
+                                }}
+                              >
+                                <XCircle size={12} /> Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="8" className="text-center py-3 text-muted">No bandwidth change requests recorded.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: EQUIPMENT & END DEVICES  */}
+        {activeTab === 'devices' && (
+          <div>
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+              <div>
+                <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
+                  <HardDrive size={20} /> Network Equipment & End Devices Management
+                </h5>
+                <p className="text-muted small mb-0">Track hardware assets, ownership, warranty expiration warnings & customer endpoint devices .</p>
+              </div>
+
+              <div className="d-flex gap-2">
+                <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveEqModal('equipment')}>
+                  <Plus size={14} /> Add Equipment
+                </button>
+                <button className="btn btn-sm btn-outline-info d-flex align-items-center gap-1" onClick={() => setActiveEqModal('device')}>
+                  <Plus size={14} /> Register End Device
+                </button>
+              </div>
+            </div>
+
+            {/* Equipment KPIs */}
+            <div className="card border-0 shadow-sm mb-4 bg-light">
+              <div className="card-body p-3">
+                <div className="row g-3 text-center">
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">ASSIGNED EQUIPMENT</div>
+                    <div className="fw-bold fs-4 text-primary">{eqData.total_units || 0} <span className="fs-6">Units</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">ACTIVE & INSTALLED</div>
+                    <div className="fw-bold fs-4 text-success">{eqData.active_units || 0} <span className="fs-6">Units</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">WARRANTY ALERTS (&lt;30d)</div>
+                    <div className="fw-bold fs-4 text-danger">{eqData.warranty_expiring_count || 0} <span className="fs-6">Units</span></div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted fs-8">CONNECTED END DEVICES</div>
+                    <div className="fw-bold fs-4 text-info">{eqData.total_end_devices || 0} <span className="fs-6">Devices</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Equipment Table */}
+            <h6 className="fw-bold mb-2">Equipment Assets ({eqData.equipments?.length || 0})</h6>
+            <div className="table-responsive mb-4">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7">
+                  <tr>
+                    <th>Equipment Code</th>
+                    <th>Type & Model</th>
+                    <th>Serial # / MAC</th>
+                    <th>Ownership</th>
+                    <th>Location</th>
+                    <th>Warranty Expiry</th>
+                    <th>Purchase Cost</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody className="fs-7">
+                  {eqData.equipments?.length > 0 ? (
+                    eqData.equipments.map((eq) => {
+                      const cleanDate = eq.warranty_end ? eq.warranty_end.split('T')[0] : null
+                      const isExpiring = cleanDate && Math.ceil((new Date(cleanDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30 && Math.ceil((new Date(cleanDate) - new Date()) / (1000 * 60 * 60 * 24)) >= 0
+                      return (
+                        <tr key={eq.id}>
+                          <td className="fw-bold text-dark">{eq.equipment_id}</td>
+                          <td>
+                            <div className="fw-semibold">{eq.equipment_type}</div>
+                            <div className="small text-muted">{eq.manufacturer} {eq.model}</div>
+                          </td>
+                          <td>
+                            <div className="small">{eq.serial_number || 'N/A'}</div>
+                            {eq.mac_address && <div className="small text-muted">{eq.mac_address}</div>}
+                          </td>
+                          <td><span className="badge bg-secondary-subtle text-secondary">{eq.ownership}</span></td>
+                          <td className="small">{eq.location || '-'}</td>
+                          <td>
+                            {cleanDate ? (
+                              <span className={`badge ${isExpiring ? 'bg-danger-subtle text-danger' : 'bg-light text-dark'}`}>
+                                {cleanDate} {isExpiring && '(Expiring Soon)'}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="fw-semibold">৳{Number(eq.purchase_cost).toLocaleString()}</td>
+                          <td>
+                            <span className={`badge ${eq.status === 'Active' || eq.status === 'Installed' ? 'bg-success-subtle text-success' : eq.status === 'Faulty' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                              {eq.status}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr><td colSpan="8" className="text-center py-3 text-muted">No equipment assets assigned to this partner.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* End Devices Table */}
+            <h6 className="fw-bold mb-2">Registered End Devices ({eqData.end_devices?.length || 0})</h6>
+            <div className="table-responsive mb-4">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7">
+                  <tr>
+                    <th>Device Type</th>
+                    <th>Identifier (MAC / Serial / ID)</th>
+                    <th>Activation Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody className="fs-7">
+                  {eqData.end_devices?.length > 0 ? (
+                    eqData.end_devices.map((dev) => (
+                      <tr key={dev.id}>
+                        <td><span className="badge bg-info-subtle text-info">{dev.device_type}</span></td>
+                        <td className="fw-bold text-dark">{dev.identifier}</td>
+                        <td>{dev.activation_date ? dev.activation_date.split('T')[0] : '-'}</td>
+                        <td>
+                          <span className={`badge ${dev.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
+                            {dev.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="4" className="text-center py-3 text-muted">No end devices registered.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Commission Tab */}
+        {activeTab === 'commission' && (
+          <div className="pm-card p-4">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                  <CreditCard size={20} className="text-primary" />
+                  Commission Engine &amp; Dashboard
+                </h5>
+                <p className="text-muted small mb-0">Rules, lifecycle (Generated → Payable → Paid), BR-09</p>
+              </div>
+              <div className="d-flex gap-2">
+                <button className="btn btn-sm btn-outline-secondary" onClick={() => setActiveCommModal('addRule')}><Plus size={14} className="me-1" />Add Rule</button>
+                <button className="btn btn-sm btn-primary" onClick={() => setActiveCommModal('addCommission')}><Plus size={14} className="me-1" />Record Commission</button>
+              </div>
+            </div>
+            <div className="row g-3 mb-4">
+              {[{label:'Total Earned',value:commData.total_earned,color:'success'},{label:'Total Paid',value:commData.total_paid,color:'primary'},{label:'Pending',value:commData.total_pending,color:'warning'},{label:'Current Month',value:commData.current_month,color:'info'},{label:'Prev Month',value:commData.previous_month,color:'secondary'},{label:'YTD',value:commData.ytd,color:'dark'}].map(({label,value,color}) => (
+                <div key={label} className="col-6 col-md-4 col-xl-2">
+                  <div className="pm-card p-3 text-center h-100">
+                    <div className={`text-${color} fw-bold fs-5`}>৳{Number(value||0).toLocaleString()}</div>
+                    <div className="text-muted" style={{fontSize:'0.72rem'}}>{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="d-flex flex-wrap gap-2 mb-4">
+              {commData.by_status && Object.entries(commData.by_status).map(([status,amount]) => (
+                <div key={status} className="px-3 py-1 rounded-pill border d-flex gap-2 align-items-center" style={{fontSize:'0.75rem'}}>
+                  <span className="fw-semibold">{status}</span>
+                  <span className="text-muted">৳{Number(amount||0).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <h6 className="fw-bold mb-2">Commission Rules ({commData.rules?.length || 0})</h6>
+            <div className="table-responsive mb-4">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7"><tr><th>Rule Name</th><th>Type</th><th>Rate/Amount</th><th>Service</th><th>Max Cap</th><th>Effective</th><th>Expiry</th><th>Status</th></tr></thead>
+                <tbody className="fs-7">
+                  {commData.rules?.length > 0 ? commData.rules.map((rule) => (
+                    <tr key={rule.id}>
+                      <td className="fw-semibold">{rule.rule_name}</td>
+                      <td><span className="badge bg-primary-subtle text-primary">{rule.commission_type}</span></td>
+                      <td>{['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(rule.commission_type) ? `${rule.rate}%` : `৳${Number(rule.fixed_amount||0).toLocaleString()}`}</td>
+                      <td>{rule.service||'—'}</td>
+                      <td>{rule.maximum_limit>0?`৳${Number(rule.maximum_limit).toLocaleString()}`:'—'}</td>
+                      <td>{rule.effective_date||'—'}</td>
+                      <td>{rule.expiry_date||'—'}</td>
+                      <td><span className={`badge ${rule.status==='Active'?'bg-success-subtle text-success':'bg-danger-subtle text-danger'}`}>{rule.status}</span></td>
+                    </tr>
+                  )) : <tr><td colSpan="8" className="text-center py-3 text-muted">No rules — click "Add Rule" to configure the engine.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <h6 className="fw-bold mb-2">Commission Records ({commData.commissions?.length || 0})</h6>
+            <div className="table-responsive">
+              <table className="table table-hover align-middle border mb-0">
+                <thead className="table-light fs-7"><tr><th>Period</th><th>Rule</th><th>Source Ref.</th><th>Source (৳)</th><th>Commission (৳)</th><th>Status</th><th>Generated</th><th>Approved By</th><th>Actions</th></tr></thead>
+                <tbody className="fs-7">
+                  {commData.commissions?.length > 0 ? commData.commissions.map((c) => (
+                    <tr key={c.id}>
+                      <td className="fw-semibold">{String(c.period_month).padStart(2,'0')}/{c.period_year}</td>
+                      <td>{c.rule_name||'—'}</td>
+                      <td className="text-muted small">{c.source_reference||'—'}</td>
+                      <td>৳{Number(c.source_amount||0).toLocaleString()}</td>
+                      <td className="fw-bold text-success">৳{Number(c.commission_amount||0).toLocaleString()}</td>
+                      <td><span className={`badge ${c.status==='Paid'?'bg-success text-white':c.status==='Payable'?'bg-success-subtle text-success':c.status==='Approved'?'bg-primary-subtle text-primary':['Rejected','Reversed'].includes(c.status)?'bg-danger-subtle text-danger':['Generated','Pending'].includes(c.status)?'bg-warning-subtle text-warning':'bg-secondary-subtle text-secondary'}`}>{c.status}</span></td>
+                      <td>{c.generated_at||'—'}</td>
+                      <td>{c.approved_by_name||'—'}</td>
+                      <td>
+                        <div className="d-flex gap-1 flex-wrap">
+                          {['Generated','Pending','Calculated'].includes(c.status) && (<>
+                            <button className="btn btn-xs btn-success py-0 px-2" style={{fontSize:'0.7rem'}} disabled={approveCommMutation.isPending} onClick={()=>approveCommMutation.mutate({cid:c.id,reason:''})}>{approveCommMutation.isPending?<span className="spinner-border spinner-border-sm"/>:<CheckCircle2 size={12}/>} Approve</button>
+                            <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{fontSize:'0.7rem'}} onClick={()=>{setCommActionId(c.id);setCommActionReason('')}}><XCircle size={12}/> Reject</button>
+                          </>)}
+                          {c.status==='Payable' && <button className="btn btn-xs btn-primary py-0 px-2" style={{fontSize:'0.7rem'}} onClick={()=>{setCommPayForm({commissionId:c.id,payment_date:new Date().toISOString().split('T')[0],amount:c.commission_amount,payment_method:'Bank Transfer',reference_number:''});setActiveCommModal('pay')}}>Pay</button>}
+                          {c.status==='Paid' && <span className="text-success small"><CheckCircle2 size={12}/> Paid</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  )) : <tr><td colSpan="9" className="text-center py-3 text-muted">No records — click "Record Commission".</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Financial Recording Modals */}
@@ -704,8 +1255,9 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setActiveFinModal(null)}>Cancel</button>
-                <button className="btn btn-success" disabled={addRevMutation.isLoading || !revForm.amount} onClick={() => addRevMutation.mutate(revForm)}>
-                  Save Revenue
+                <button className="btn btn-success d-flex align-items-center gap-1" disabled={addRevMutation.isPending || !revForm.amount} onClick={() => addRevMutation.mutate(revForm)}>
+                  {addRevMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addRevMutation.isPending ? 'Saving Revenue...' : 'Save Revenue'}
                 </button>
               </div>
             </div>
@@ -748,8 +1300,9 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setActiveFinModal(null)}>Cancel</button>
-                <button className="btn btn-danger" disabled={addCostMutation.isLoading || !costForm.amount} onClick={() => addCostMutation.mutate(costForm)}>
-                  Save Cost
+                <button className="btn btn-danger d-flex align-items-center gap-1" disabled={addCostMutation.isPending || !costForm.amount} onClick={() => addCostMutation.mutate(costForm)}>
+                  {addCostMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addCostMutation.isPending ? 'Saving Cost...' : 'Save Cost'}
                 </button>
               </div>
             </div>
@@ -791,8 +1344,466 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setActiveFinModal(null)}>Cancel</button>
-                <button className="btn btn-primary" disabled={addPayMutation.isLoading || !payForm.amount} onClick={() => addPayMutation.mutate(payForm)}>
-                  Save Payment
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addPayMutation.isPending || !payForm.amount} onClick={() => addPayMutation.mutate(payForm)}>
+                  {addPayMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addPayMutation.isPending ? 'Saving Payment...' : 'Save Payment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bandwidth Modals (Phase 5.1) */}
+      {activeBwModal === 'allocate' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Allocate Bandwidth</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveBwModal(null)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Service Type</label>
+                  <select className="form-select" value={bwAllocForm.service} onChange={(e) => setBwAllocForm({ ...bwAllocForm, service: e.target.value })}>
+                    <option value="Internet">Internet</option>
+                    <option value="GGC">GGC</option>
+                    <option value="FNA">FNA</option>
+                    <option value="BDIX">BDIX</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Allocated Capacity (Mbps)</label>
+                  <input type="number" className="form-control" value={bwAllocForm.allocated_mbps} onChange={(e) => setBwAllocForm({ ...bwAllocForm, allocated_mbps: e.target.value })} placeholder="e.g. 500" />
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Contention Ratio</label>
+                    <input type="text" className="form-control" value={bwAllocForm.ratio} onChange={(e) => setBwAllocForm({ ...bwAllocForm, ratio: e.target.value })} placeholder="e.g. 1:1 or 1:4" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Work Order ID</label>
+                    <input type="text" className="form-control" value={bwAllocForm.work_order_id} onChange={(e) => setBwAllocForm({ ...bwAllocForm, work_order_id: e.target.value })} placeholder="Auto if empty" />
+                  </div>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Monthly Price (৳)</label>
+                    <input type="number" className="form-control" value={bwAllocForm.price} onChange={(e) => setBwAllocForm({ ...bwAllocForm, price: e.target.value })} placeholder="e.g. 150000" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Monthly Cost (৳)</label>
+                    <input type="number" className="form-control" value={bwAllocForm.cost} onChange={(e) => setBwAllocForm({ ...bwAllocForm, cost: e.target.value })} placeholder="e.g. 105000" />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveBwModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addBwAllocMutation.isPending || !bwAllocForm.allocated_mbps} onClick={() => addBwAllocMutation.mutate(bwAllocForm)}>
+                  {addBwAllocMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addBwAllocMutation.isPending ? 'Saving Allocation...' : 'Save Allocation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeBwModal === 'change' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Request Bandwidth Upgrade / Change</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveBwModal(null)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Select Target Bandwidth Allocation</label>
+                  <select className="form-select" value={bwChangeForm.allocation_id} onChange={(e) => setBwChangeForm({ ...bwChangeForm, allocation_id: e.target.value })}>
+                    <option value="">-- Choose Allocation --</option>
+                    {bwData.allocations?.map((a) => (
+                      <option key={a.id} value={a.id}>{a.service} - Current: {a.allocated_mbps} Mbps (WO: {a.work_order_id})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Change Type</label>
+                    <select className="form-select" value={bwChangeForm.change_type} onChange={(e) => setBwChangeForm({ ...bwChangeForm, change_type: e.target.value })}>
+                      <option value="Upgrade">Upgrade</option>
+                      <option value="Downgrade">Downgrade</option>
+                      <option value="Temporary">Temporary Boost</option>
+                      <option value="Emergency">Emergency Adjustment</option>
+                    </select>
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">New Requested Mbps</label>
+                    <input type="number" className="form-control" value={bwChangeForm.new_mbps} onChange={(e) => setBwChangeForm({ ...bwChangeForm, new_mbps: e.target.value })} placeholder="e.g. 800" />
+                  </div>
+                </div>
+
+                {/* Pre-Approval Impact Analysis Box */}
+                {bwChangeForm.allocation_id && bwChangeForm.new_mbps && (
+                  (() => {
+                    const sel = bwData.allocations?.find(a => a.id == bwChangeForm.allocation_id)
+                    if (!sel) return null
+                    const diff = Number(bwChangeForm.new_mbps) - Number(sel.allocated_mbps)
+                    const unitPrice = sel.allocated_mbps > 0 ? (sel.price / sel.allocated_mbps) : 300
+                    const unitCost = sel.allocated_mbps > 0 ? (sel.cost / sel.allocated_mbps) : 200
+                    const revImp = diff * unitPrice
+                    const costImp = diff * unitCost
+                    const profitImp = revImp - costImp
+                    return (
+                      <div className="p-3 bg-light rounded-3 border mb-3">
+                        <h6 className="fw-bold fs-7 text-primary mb-2">Pre-Approval Impact Analysis </h6>
+                        <div className="row text-center g-2 fs-7">
+                          <div className="col-3"><span className="text-muted">Capacity Diff:</span> <br/><strong className={diff >= 0 ? 'text-success' : 'text-danger'}>{diff >= 0 ? `+${diff}` : diff} Mbps</strong></div>
+                          <div className="col-3"><span className="text-muted">Est. Revenue:</span> <br/><strong className={revImp >= 0 ? 'text-success' : 'text-danger'}>{revImp >= 0 ? `+৳${revImp.toLocaleString()}` : `৳${revImp.toLocaleString()}`}</strong></div>
+                          <div className="col-3"><span className="text-muted">Est. Cost:</span> <br/><strong className={costImp >= 0 ? 'text-danger' : 'text-success'}>{costImp >= 0 ? `+৳${costImp.toLocaleString()}` : `৳${costImp.toLocaleString()}`}</strong></div>
+                          <div className="col-3"><span className="text-muted">Net Profit:</span> <br/><strong className={profitImp >= 0 ? 'text-primary' : 'text-danger'}>{profitImp >= 0 ? `+৳${profitImp.toLocaleString()}` : `৳${profitImp.toLocaleString()}`}</strong></div>
+                        </div>
+                      </div>
+                    )
+                  })()
+                )}
+
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Business Justification / Reason</label>
+                  <textarea className="form-control" rows="2" value={bwChangeForm.reason} onChange={(e) => setBwChangeForm({ ...bwChangeForm, reason: e.target.value })} placeholder="Reason for capacity adjustment..."></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveBwModal(null)}>Cancel</button>
+                <button className="btn btn-warning text-dark d-flex align-items-center gap-1" disabled={bwChangeReqMutation.isPending || !bwChangeForm.allocation_id || !bwChangeForm.new_mbps} onClick={() => bwChangeReqMutation.mutate(bwChangeForm)}>
+                  {bwChangeReqMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {bwChangeReqMutation.isPending ? 'Submitting Request...' : 'Submit Request for Approval (BR-08)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Equipment Modals */}
+      {activeEqModal === 'equipment' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Add & Assign Equipment</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveEqModal(null)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Equipment Type</label>
+                  <select className="form-select" value={eqForm.equipment_type} onChange={(e) => setEqForm({ ...eqForm, equipment_type: e.target.value })}>
+                    <option value="Router">Router</option>
+                    <option value="ONU">ONU / ONT</option>
+                    <option value="OLT">OLT</option>
+                    <option value="Switch">Switch</option>
+                    <option value="CPE">CPE</option>
+                    <option value="Access Point">Access Point</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Manufacturer</label>
+                    <input type="text" className="form-control" value={eqForm.manufacturer} onChange={(e) => setEqForm({ ...eqForm, manufacturer: e.target.value })} placeholder="e.g. MikroTik, Huawei" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Model</label>
+                    <input type="text" className="form-control" value={eqForm.model} onChange={(e) => setEqForm({ ...eqForm, model: e.target.value })} placeholder="e.g. CCR1036" />
+                  </div>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Serial Number</label>
+                    <input type="text" className="form-control" value={eqForm.serial_number} onChange={(e) => setEqForm({ ...eqForm, serial_number: e.target.value })} placeholder="Serial #" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">MAC Address</label>
+                    <input type="text" className="form-control" value={eqForm.mac_address} onChange={(e) => setEqForm({ ...eqForm, mac_address: e.target.value })} placeholder="XX:XX:XX:XX:XX:XX" />
+                  </div>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Ownership</label>
+                    <select className="form-select" value={eqForm.ownership} onChange={(e) => setEqForm({ ...eqForm, ownership: e.target.value })}>
+                      <option value="Company Owned">Company Owned</option>
+                      <option value="Partner Owned">Partner Owned</option>
+                      <option value="Customer Owned">Customer Owned</option>
+                      <option value="Leased">Leased</option>
+                      <option value="Rented">Rented</option>
+                    </select>
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Purchase Cost (৳)</label>
+                    <input type="number" className="form-control" value={eqForm.purchase_cost} onChange={(e) => setEqForm({ ...eqForm, purchase_cost: e.target.value })} placeholder="e.g. 120000" />
+                  </div>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Location / POP</label>
+                    <input type="text" className="form-control" value={eqForm.location} onChange={(e) => setEqForm({ ...eqForm, location: e.target.value })} placeholder="e.g. Rack A-12" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Warranty End Date</label>
+                    <input type="date" className="form-control" value={eqForm.warranty_end} onChange={(e) => setEqForm({ ...eqForm, warranty_end: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveEqModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addEqMutation.isPending} onClick={() => addEqMutation.mutate(eqForm)}>
+                  {addEqMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addEqMutation.isPending ? 'Saving Equipment...' : 'Save Equipment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeEqModal === 'device' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Register End Device</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveEqModal(null)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Device Type</label>
+                  <select className="form-select" value={devForm.device_type} onChange={(e) => setDevForm({ ...devForm, device_type: e.target.value })}>
+                    <option value="ONU">ONU / ONT</option>
+                    <option value="MAC Address">MAC Address</option>
+                    <option value="Router">Router</option>
+                    <option value="CPE">CPE</option>
+                    <option value="Device ID">Device ID</option>
+                    <option value="Serial Number">Serial Number</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Identifier (MAC / Serial / Device ID)</label>
+                  <input type="text" className="form-control" value={devForm.identifier} onChange={(e) => setDevForm({ ...devForm, identifier: e.target.value })} placeholder="e.g. HWTC12345678 or 00:1A:2B:3C:4D:5E" />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveEqModal(null)}>Cancel</button>
+                <button className="btn btn-info text-white d-flex align-items-center gap-1" disabled={addDevMutation.isPending || !devForm.identifier} onClick={() => addDevMutation.mutate(devForm)}>
+                  {addDevMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addDevMutation.isPending ? 'Registering Device...' : 'Register Device'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Commission Modals  */}
+
+      {/* Add Commission Rule Modal */}
+      {activeCommModal === 'addRule' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Add Commission Rule</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveCommModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label small fw-semibold">Rule Name *</label>
+                    <input type="text" className="form-control" value={commRuleForm.rule_name} onChange={(e) => setCommRuleForm({ ...commRuleForm, rule_name: e.target.value })} placeholder="e.g. Bandwidth Revenue Commission 5%" />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Commission Type *</label>
+                    <select className="form-select" value={commRuleForm.commission_type} onChange={(e) => setCommRuleForm({ ...commRuleForm, commission_type: e.target.value })}>
+                      {['Percentage','Fixed Amount','Per Customer','Per Activation','Per Renewal','Per Package','Revenue Based','Bandwidth Based','Custom'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Service</label>
+                    <input type="text" className="form-control" value={commRuleForm.service} onChange={(e) => setCommRuleForm({ ...commRuleForm, service: e.target.value })} placeholder="e.g. Internet, GGC (optional)" />
+                  </div>
+                  <div className="col-4">
+                    <label className="form-label small fw-semibold">
+                      {['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(commRuleForm.commission_type) ? 'Rate (%)' : 'Fixed Amount (৳)'}
+                    </label>
+                    {['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(commRuleForm.commission_type)
+                      ? <input type="number" className="form-control" value={commRuleForm.rate} onChange={(e) => setCommRuleForm({ ...commRuleForm, rate: e.target.value })} placeholder="e.g. 5" />
+                      : <input type="number" className="form-control" value={commRuleForm.fixed_amount} onChange={(e) => setCommRuleForm({ ...commRuleForm, fixed_amount: e.target.value })} placeholder="e.g. 500" />
+                    }
+                  </div>
+                  <div className="col-4">
+                    <label className="form-label small fw-semibold">Maximum Cap (৳) — optional</label>
+                    <input type="number" className="form-control" value={commRuleForm.maximum_limit} onChange={(e) => setCommRuleForm({ ...commRuleForm, maximum_limit: e.target.value })} placeholder="e.g. 50000 (0 = no cap)" />
+                  </div>
+                  <div className="col-4">
+                    <label className="form-label small fw-semibold">Status</label>
+                    <select className="form-select" value={commRuleForm.status} onChange={(e) => setCommRuleForm({ ...commRuleForm, status: e.target.value })}>
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Effective Date</label>
+                    <input type="date" className="form-control" value={commRuleForm.effective_date} onChange={(e) => setCommRuleForm({ ...commRuleForm, effective_date: e.target.value })} />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Expiry Date</label>
+                    <input type="date" className="form-control" value={commRuleForm.expiry_date} onChange={(e) => setCommRuleForm({ ...commRuleForm, expiry_date: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveCommModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addCommRuleMutation.isPending || !commRuleForm.rule_name} onClick={() => addCommRuleMutation.mutate(commRuleForm)}>
+                  {addCommRuleMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addCommRuleMutation.isPending ? 'Saving Rule...' : 'Save Commission Rule'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record Commission Modal */}
+      {activeCommModal === 'addCommission' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Record Commission Entry</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveCommModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info py-2 small">
+                  <strong>Calculation Preview:</strong> Source Amount × Rule Rate = Commission Amount (auto-calculated if rule is selected)
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Commission Rule</label>
+                  <select className="form-select" value={commForm.rule_id} onChange={(e) => setCommForm({ ...commForm, rule_id: e.target.value })}>
+                    <option value="">-- No Rule (Manual) --</option>
+                    {commData.rules?.map((r) => (
+                      <option key={r.id} value={r.id}>{r.rule_name} ({r.commission_type}{r.rate > 0 ? ` — ${r.rate}%` : ''})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="row g-2 mb-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Period Month *</label>
+                    <select className="form-select" value={commForm.period_month} onChange={(e) => setCommForm({ ...commForm, period_month: Number(e.target.value) })}>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                        <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-semibold">Period Year *</label>
+                    <input type="number" className="form-control" value={commForm.period_year} onChange={(e) => setCommForm({ ...commForm, period_year: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Source Amount (৳) *</label>
+                  <input type="number" className="form-control" value={commForm.source_amount} onChange={(e) => setCommForm({ ...commForm, source_amount: e.target.value })} placeholder="e.g. 100000" />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Override Commission Amount (৳) — leave blank to auto-calculate</label>
+                  <input type="number" className="form-control" value={commForm.commission_amount} onChange={(e) => setCommForm({ ...commForm, commission_amount: e.target.value })} placeholder="Auto from rule" />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Source Reference (Transaction ID)</label>
+                  <input type="text" className="form-control" value={commForm.source_reference} onChange={(e) => setCommForm({ ...commForm, source_reference: e.target.value })} placeholder="e.g. INV-2026-09-001" />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Remarks</label>
+                  <textarea className="form-control" rows="2" value={commForm.remarks} onChange={(e) => setCommForm({ ...commForm, remarks: e.target.value })} />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveCommModal(null)}>Cancel</button>
+                <button className="btn btn-success d-flex align-items-center gap-1" disabled={addCommMutation.isPending || !commForm.source_amount} onClick={() => addCommMutation.mutate(commForm)}>
+                  {addCommMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addCommMutation.isPending ? 'Saving Commission...' : 'Record Commission (→ Generated)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Commission Modal  */}
+      {activeCommModal === 'pay' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Record Commission Payment</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveCommModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-success py-2 small mb-3">
+                  <strong>BR-09 Compliant:</strong> This commission has been Approved and is Payable. Recording payment will mark it as Paid.
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Payment Date *</label>
+                  <input type="date" className="form-control" value={commPayForm.payment_date} onChange={(e) => setCommPayForm({ ...commPayForm, payment_date: e.target.value })} />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Amount (৳) *</label>
+                  <input type="number" className="form-control" value={commPayForm.amount} onChange={(e) => setCommPayForm({ ...commPayForm, amount: e.target.value })} placeholder="Commission amount" />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Payment Method</label>
+                  <select className="form-select" value={commPayForm.payment_method} onChange={(e) => setCommPayForm({ ...commPayForm, payment_method: e.target.value })}>
+                    {['Bank Transfer','Cheque','Cash','Mobile Banking','Other'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Reference Number</label>
+                  <input type="text" className="form-control" value={commPayForm.reference_number} onChange={(e) => setCommPayForm({ ...commPayForm, reference_number: e.target.value })} placeholder="Bank transaction / Cheque #" />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveCommModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={payCommMutation.isPending || !commPayForm.amount} onClick={() => payCommMutation.mutate({ cid: commPayForm.commissionId, data: commPayForm })}>
+                  {payCommMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {payCommMutation.isPending ? 'Processing Payment...' : 'Record Payment (→ Paid)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Commission Confirmation */}
+      {commActionId && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-sm">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h6 className="modal-title fw-bold">Reject Commission</h6>
+                <button type="button" className="btn-close" onClick={() => setCommActionId(null)} />
+              </div>
+              <div className="modal-body">
+                <textarea className="form-control" rows="3" placeholder="Reason for rejection..." value={commActionReason} onChange={(e) => setCommActionReason(e.target.value)} />
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary btn-sm" onClick={() => setCommActionId(null)}>Cancel</button>
+                <button className="btn btn-danger btn-sm d-flex align-items-center gap-1" disabled={rejectCommMutation.isPending || !commActionReason} onClick={() => rejectCommMutation.mutate({ cid: commActionId, reason: commActionReason })}>
+                  {rejectCommMutation.isPending && <span className="spinner-border spinner-border-sm" />}
+                  {rejectCommMutation.isPending ? 'Rejecting...' : 'Confirm Reject'}
                 </button>
               </div>
             </div>

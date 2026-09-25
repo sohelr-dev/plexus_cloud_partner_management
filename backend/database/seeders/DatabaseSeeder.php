@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             LookupSeeder::class,
             FinancialSeeder::class,
+            BandwidthSeeder::class,
+            EquipmentSeeder::class,
         ]);
 
         $users = [

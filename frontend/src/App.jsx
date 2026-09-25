@@ -8,6 +8,7 @@ import PartnerDetailsPage from './pages/Partners/PartnerDetailsPage'
 import PartnerEditPage from './pages/Partners/PartnerEditPage'
 import AuditLogsPage from './pages/AuditLogs/AuditLogsPage'
 import Dashboard from './pages/Dashboard'
+import CommissionDashboardPage from './pages/Commission/CommissionDashboardPage'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
@@ -28,11 +29,6 @@ const placeholders = {
     title: 'Bandwidth',
     description: 'Allocation, upgrade/downgrade workflow .',
     items: ['Allocations', 'Upgrade Requests', 'History'],
-  },
-  '/commission': {
-    title: 'Commission',
-    description: 'Commission rules, calculation and approval .',
-    items: ['Rules', 'Commissions', 'Dashboard'],
   },
   '/support-centers': {
     title: 'Support Centers',
@@ -80,6 +76,14 @@ export default function App() {
                     element={
                       <RoleRoute permission="audit-log.view">
                         <AuditLogsPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/commission"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <CommissionDashboardPage />
                       </RoleRoute>
                     }
                   />

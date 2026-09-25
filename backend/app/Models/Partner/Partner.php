@@ -147,4 +147,50 @@ class Partner extends Model
     {
         return $this->hasMany(\App\Models\Financial\PartnerRoi::class);
     }
+
+    // --- Bandwidth Relationships ---
+
+    public function bandwidthAllocations(): HasMany
+    {
+        return $this->hasMany(\App\Models\Bandwidth\PartnerBandwidthAllocation::class);
+    }
+
+    public function bandwidthChanges(): HasMany
+    {
+        return $this->hasMany(\App\Models\Bandwidth\PartnerBandwidthChange::class);
+    }
+
+    public function bandwidthHistories(): HasMany
+    {
+        return $this->hasMany(\App\Models\Bandwidth\PartnerBandwidthHistory::class);
+    }
+
+    // --- Equipment & Device Relationships ---
+
+    public function equipments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Equipment\PartnerEquipment::class);
+    }
+
+    public function endDevices(): HasMany
+    {
+        return $this->hasMany(\App\Models\Equipment\PartnerEndDevice::class);
+    }
+
+    // --- Commission Relationships ---
+
+    public function commissionRules(): HasMany
+    {
+        return $this->hasMany(\App\Models\Commission\CommissionRule::class);
+    }
+
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Commission\PartnerCommission::class);
+    }
+
+    public function commissionPayments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Commission\CommissionPayment::class);
+    }
 }
