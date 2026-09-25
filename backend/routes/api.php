@@ -93,6 +93,10 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('permission:partner.update');
         Route::post('/maintenance/{equipment}', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'logMaintenance'])
             ->middleware('permission:partner.update');
+        Route::post('/{equipment}/replace', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'replace'])
+            ->middleware('permission:partner.update');
+        Route::post('/{equipment}/return', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'returnEquipment'])
+            ->middleware('permission:partner.update');
     });
 
     // --- Commission Module ---

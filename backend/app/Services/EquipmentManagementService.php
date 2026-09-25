@@ -138,4 +138,62 @@ class EquipmentManagementService
             return $maintenance;
         });
     }
+    /**
+     * Replace an equipment asset.
+     */
+    public static function replaceEquipment(PartnerEquipment $equipment, array $data, ?User $performedBy = null): PartnerEquipment
+    {
+        return DB::transaction(function () use ($equipment, $data, $performedBy) {
+            $equipment->update(['status' => 'Replaced']);
+
+            PartnerEquipmentHistory::create([
+                'equipment_id' => $equipment->id,
+                'event_type'   => 'Replaced',
+                'event_date'   => now()->toDateString(),
+                'performed_by' => $performedBy ? $performedBy->id : auth()->id(),
+                'remarks'      => "Replaced with new equipment. Reason: " . ($data['reason'] ?? 'N/A'),
+            ]);
+
+            PartnerEquipmentAssignment::where('equipment_id', $equipment->id)
+                ->where('status', 'Active')
+                ->update(['status' => 'Returned', 'return_date' => now()->toDateString()]);
+
+            if (!empty($data['new_equipment_serial']) || !empty($data['new_equipment_mac'])) {
+                $newEquipmentData = $equipment->toArray();
+                unset($newEquipmentData['id'], $newEquipmentData['created_at'], $newEquipmentData['updated_at'], $newEquipmentData['equipment_id']);
+                $newEquipmentData['serial_number'] = $data['new_equipment_serial'] ?? null;
+                $newEquipmentData['mac_address'] = $data['new_equipment_mac'] ?? null;
+                $newEquipmentData['status'] = 'Active';
+                $newEquipmentData['purchase_cost'] = $data['new_purchase_cost'] ?? 0;
+                
+                return self::createEquipment($equipment->partner, $newEquipmentData, $performedBy);
+            }
+
+            return $equipment;
+        });
+    }
+
+    /**
+     * Return an equipment asset.
+     */
+    public static function returnEquipment(PartnerEquipment $equipment, array $data, ?User $performedBy = null): PartnerEquipment
+    {
+        return DB::transaction(function () use ($equipment, $data, $performedBy) {
+            $equipment->update(['status' => 'Returned']);
+
+            PartnerEquipmentHistory::create([
+                'equipment_id' => $equipment->id,
+                'event_type'   => 'Returned',
+                'event_date'   => now()->toDateString(),
+                'performed_by' => $performedBy ? $performedBy->id : auth()->id(),
+                'remarks'      => "Returned from partner. Reason: " . ($data['reason'] ?? 'N/A'),
+            ]);
+
+            PartnerEquipmentAssignment::where('equipment_id', $equipment->id)
+                ->where('status', 'Active')
+                ->update(['status' => 'Returned', 'return_date' => now()->toDateString()]);
+
+            return $equipment;
+        });
+    }
 }

@@ -120,4 +120,58 @@ class EquipmentController extends Controller
             'data'    => $maintenance,
         ]);
     }
+    /**
+     * Replace an equipment asset.
+     */
+    public function replace(Request $request, PartnerEquipment $equipment): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason'               => 'nullable|string|max:500',
+            'new_equipment_serial' => 'nullable|string|max:100',
+            'new_equipment_mac'    => 'nullable|string|max:50',
+            'new_purchase_cost'    => 'nullable|numeric|min:0',
+        ]);
+
+        $newEquipment = EquipmentManagementService::replaceEquipment($equipment, $validated, $request->user());
+
+        AuditLogService::log(
+            'equipment.replaced',
+            $equipment->partner,
+            $equipment->toArray(),
+            $newEquipment->toArray(),
+            "Replaced equipment #{$equipment->equipment_id}."
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Equipment replaced successfully.',
+            'data'    => $newEquipment,
+        ]);
+    }
+
+    /**
+     * Return an equipment asset.
+     */
+    public function returnEquipment(Request $request, PartnerEquipment $equipment): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $returnedEquipment = EquipmentManagementService::returnEquipment($equipment, $validated, $request->user());
+
+        AuditLogService::log(
+            'equipment.returned',
+            $equipment->partner,
+            null,
+            $returnedEquipment->toArray(),
+            "Returned equipment #{$equipment->equipment_id}."
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Equipment returned successfully.',
+            'data'    => $returnedEquipment,
+        ]);
+    }
 }
