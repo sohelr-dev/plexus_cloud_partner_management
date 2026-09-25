@@ -31,3 +31,19 @@ export const logEquipmentMaintenance = async (equipmentId, maintenanceData) => {
   const response = await api.post(`/equipment/maintenance/${equipmentId}`, maintenanceData);
   return response.data;
 };
+
+/**
+ * Replace an equipment item.
+ */
+export const replaceEquipment = async (equipmentId, replaceData) => {
+  const response = await api.post(`/equipment/${equipmentId}/replace`, replaceData);
+  return response.data;
+};
+
+/**
+ * Return an equipment item.
+ */
+export const returnEquipment = async (equipmentId, returnData) => {
+  const response = await api.post(`/equipment/${equipmentId}/return`, returnData);
+  return response.data;
+};

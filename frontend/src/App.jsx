@@ -9,6 +9,7 @@ import PartnerEditPage from './pages/Partners/PartnerEditPage'
 import AuditLogsPage from './pages/AuditLogs/AuditLogsPage'
 import Dashboard from './pages/Dashboard'
 import CommissionDashboardPage from './pages/Commission/CommissionDashboardPage'
+import BandwidthDashboardPage from './pages/Bandwidth/BandwidthDashboardPage'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
@@ -25,11 +26,6 @@ const queryClient = new QueryClient({
 })
 
 const placeholders = {
-  '/bandwidth': {
-    title: 'Bandwidth',
-    description: 'Allocation, upgrade/downgrade workflow .',
-    items: ['Allocations', 'Upgrade Requests', 'History'],
-  },
   '/support-centers': {
     title: 'Support Centers',
     description: 'Branch management, staff, costs ',
@@ -84,6 +80,14 @@ export default function App() {
                     element={
                       <RoleRoute allow={['*']}>
                         <CommissionDashboardPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/bandwidth"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <BandwidthDashboardPage />
                       </RoleRoute>
                     }
                   />

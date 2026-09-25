@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -34,7 +34,7 @@ import StatusActionModal from '../../components/common/StatusActionModal'
 import api from '../../api/client'
 import { fetchPartnerPnL, fetchRevenues, createRevenue, fetchCosts, createCost, fetchPayments, createPayment } from '../../api/financial'
 import { fetchBandwidthSummary, createBandwidthAllocation, requestBandwidthChange, approveBandwidthChange, rejectBandwidthChange } from '../../api/bandwidth'
-import { fetchEquipmentSummary, createEquipmentAsset, registerEndDevice, logEquipmentMaintenance } from '../../api/equipment'
+import { fetchEquipmentSummary, createEquipmentAsset, registerEndDevice, logEquipmentMaintenance, replaceEquipment, returnEquipment } from '../../api/equipment'
 import { fetchCommissionSummary, createCommissionRule, createCommission, approveCommission, rejectCommission, payCommission } from '../../api/commission'
 import { usePermissions } from '../../context/PermissionContext'
 
@@ -68,6 +68,9 @@ export default function PartnerDetailsPage() {
   const [revForm, setRevForm] = useState({ revenue_source: 'Bandwidth Sales', amount: '', description: '', source_reference: '' })
   const [costForm, setCostForm] = useState({ cost_type: 'Bandwidth Cost', amount: '', description: '', source_reference: '' })
   const [payForm, setPayForm] = useState({ payment_method: 'Bank Transfer', amount: '', reference_number: '', remarks: '' })
+  const [eqReplaceForm, setEqReplaceForm] = useState({ reason: '', new_equipment_serial: '', new_equipment_mac: '', new_purchase_cost: '' })
+  const [eqReturnForm, setEqReturnForm] = useState({ reason: '' })
+  const [eqActionItem, setEqActionItem] = useState(null)
 
   // 1. Fetch Partner details
   const { data: partner, isLoading, isError, error } = useQuery({
@@ -221,6 +224,26 @@ export default function PartnerDetailsPage() {
       setActiveEqModal(null)
       setDevForm({ device_type: 'ONU', identifier: '', status: 'Active' })
     },
+  })
+
+  const replaceEqMutation = useMutation({
+    mutationFn: (data) => replaceEquipment(eqActionItem.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['equipmentSummary', id])
+      setActiveEqModal(null)
+      setEqActionItem(null)
+      setEqReplaceForm({ reason: '', new_equipment_serial: '', new_equipment_mac: '', new_purchase_cost: '' })
+    }
+  })
+
+  const returnEqMutation = useMutation({
+    mutationFn: (data) => returnEquipment(eqActionItem.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['equipmentSummary', id])
+      setActiveEqModal(null)
+      setEqActionItem(null)
+      setEqReturnForm({ reason: '' })
+    }
   })
 
   // --- Commission State & Query---
@@ -964,20 +987,20 @@ export default function PartnerDetailsPage() {
                             <div className="d-flex gap-1">
                               <button
                                 className="btn btn-xs btn-success d-flex align-items-center gap-1"
-                                disabled={approveBwMutation.isLoading}
+                                disabled={approveBwMutation.isPending}
                                 onClick={() => approveBwMutation.mutate({ changeId: c.id, reason: 'Approved by Partner Manager' })}
                               >
-                                <CheckCircle2 size={12} /> Approve
+                                {approveBwMutation.isPending && approveBwMutation.variables?.changeId === c.id ? <span className="spinner-border spinner-border-sm" /> : <CheckCircle2 size={12} />} Approve
                               </button>
                               <button
                                 className="btn btn-xs btn-outline-danger d-flex align-items-center gap-1"
-                                disabled={rejectBwMutation.isLoading}
+                                disabled={rejectBwMutation.isPending}
                                 onClick={() => {
                                   const reason = prompt('Reason for rejection:')
                                   if (reason) rejectBwMutation.mutate({ changeId: c.id, reason })
                                 }}
                               >
-                                <XCircle size={12} /> Reject
+                                {rejectBwMutation.isPending && rejectBwMutation.variables?.changeId === c.id ? <span className="spinner-border spinner-border-sm" /> : <XCircle size={12} />} Reject
                               </button>
                             </div>
                           )}
@@ -1084,6 +1107,16 @@ export default function PartnerDetailsPage() {
                             <span className={`badge ${eq.status === 'Active' || eq.status === 'Installed' ? 'bg-success-subtle text-success' : eq.status === 'Faulty' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning-emphasis'}`}>
                               {eq.status}
                             </span>
+                          </td>
+                          <td>
+                            <div className="d-flex gap-1">
+                              {(eq.status === 'Active' || eq.status === 'Installed' || eq.status === 'Faulty') && can('partner.update') && (
+                                <>
+                                  <button className="btn btn-xs btn-outline-warning py-0 px-2" style={{fontSize:'0.7rem'}} onClick={() => { setEqActionItem(eq); setEqReplaceForm({ reason: '', new_equipment_serial: '', new_equipment_mac: '', new_purchase_cost: '' }); setActiveEqModal('replace'); }}>Replace</button>
+                                  <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{fontSize:'0.7rem'}} onClick={() => { setEqActionItem(eq); setEqReturnForm({ reason: '' }); setActiveEqModal('return'); }}>Return</button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       )
@@ -1804,6 +1837,79 @@ export default function PartnerDetailsPage() {
                 <button className="btn btn-danger btn-sm d-flex align-items-center gap-1" disabled={rejectCommMutation.isPending || !commActionReason} onClick={() => rejectCommMutation.mutate({ cid: commActionId, reason: commActionReason })}>
                   {rejectCommMutation.isPending && <span className="spinner-border spinner-border-sm" />}
                   {rejectCommMutation.isPending ? 'Rejecting...' : 'Confirm Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Equipment Replace Modal */}
+      {activeEqModal === 'replace' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Replace Equipment</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveEqModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-warning py-2 small mb-3">
+                  Replacing <strong>{eqActionItem?.equipment_id}</strong> ({eqActionItem?.equipment_type}). The current item will be marked as 'Replaced'.
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Reason for Replacement *</label>
+                  <textarea className="form-control" rows="2" value={eqReplaceForm.reason} onChange={(e) => setEqReplaceForm({ ...eqReplaceForm, reason: e.target.value })} required />
+                </div>
+                <h6 className="fw-bold fs-7 mb-2 border-bottom pb-1">New Equipment Details (Optional)</h6>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">New Serial Number</label>
+                  <input type="text" className="form-control" value={eqReplaceForm.new_equipment_serial} onChange={(e) => setEqReplaceForm({ ...eqReplaceForm, new_equipment_serial: e.target.value })} />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">New MAC Address</label>
+                  <input type="text" className="form-control" value={eqReplaceForm.new_equipment_mac} onChange={(e) => setEqReplaceForm({ ...eqReplaceForm, new_equipment_mac: e.target.value })} />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">New Purchase Cost (৳)</label>
+                  <input type="number" className="form-control" value={eqReplaceForm.new_purchase_cost} onChange={(e) => setEqReplaceForm({ ...eqReplaceForm, new_purchase_cost: e.target.value })} />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveEqModal(null)}>Cancel</button>
+                <button className="btn btn-warning d-flex align-items-center gap-1" disabled={replaceEqMutation.isPending || !eqReplaceForm.reason} onClick={() => replaceEqMutation.mutate(eqReplaceForm)}>
+                  {replaceEqMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {replaceEqMutation.isPending ? 'Replacing...' : 'Confirm Replace'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Equipment Return Modal */}
+      {activeEqModal === 'return' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Return Equipment</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveEqModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-danger py-2 small mb-3">
+                  Returning <strong>{eqActionItem?.equipment_id}</strong> ({eqActionItem?.equipment_type}). The current item will be marked as 'Returned'.
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Reason for Return *</label>
+                  <textarea className="form-control" rows="3" value={eqReturnForm.reason} onChange={(e) => setEqReturnForm({ ...eqReturnForm, reason: e.target.value })} required />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveEqModal(null)}>Cancel</button>
+                <button className="btn btn-danger d-flex align-items-center gap-1" disabled={returnEqMutation.isPending || !eqReturnForm.reason} onClick={() => returnEqMutation.mutate(eqReturnForm)}>
+                  {returnEqMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {returnEqMutation.isPending ? 'Returning...' : 'Confirm Return'}
                 </button>
               </div>
             </div>
