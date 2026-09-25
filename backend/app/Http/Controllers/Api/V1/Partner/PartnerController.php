@@ -8,17 +8,22 @@ use App\Models\Partner\Partner;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\JsonResponse;
+use App\Models\Lookup\BusinessModel;
+use App\Models\Lookup\Area;
+use App\Models\Lookup\Zone;
+use App\Models\Lookup\Territory;
+use App\Models\User;
 
 class PartnerController extends Controller
 {
     public function lookups(): JsonResponse
     {
         return response()->json([
-            'business_models'   => \App\Models\Lookup\BusinessModel::where('is_active', true)->select('id', 'name', 'description')->get(),
-            'areas'             => \App\Models\Lookup\Area::select('id', 'name')->get(),
-            'zones'             => \App\Models\Lookup\Zone::select('id', 'name')->get(),
-            'territories'       => \App\Models\Lookup\Territory::select('id', 'name')->get(),
-            'account_managers'  => \App\Models\User::select('id', 'name', 'email')->get(),
+            'business_models'   => BusinessModel::where('is_active', true)->select('id', 'name', 'description')->get(),
+            'areas'             => Area::select('id', 'name')->get(),
+            'zones'             => Zone::select('id', 'name')->get(),
+            'territories'       => Territory::select('id', 'name')->get(),
+            'account_managers'  => User::select('id', 'name', 'email')->get(),
         ]);
     }
 
@@ -68,12 +73,12 @@ class PartnerController extends Controller
 
         $partner = Partner::create($data);
 
-        // Sync Business Models if provided (BR-01)
+        // Sync Business Models if provided 
         if ($request->has('business_model_ids')) {
             $partner->businessModels()->sync($request->input('business_model_ids', []));
         }
 
-        // Create 1:1 profile row if profile data provided
+        //  profile row if profile data provided
         if (! empty($data['profile'])) {
             $partner->profile()->create($data['profile']);
         }
@@ -176,9 +181,6 @@ class PartnerController extends Controller
         );
     }
 
-    /**
-     * soft delete (deleted_at set, row kept — BR-06).
-     */
     public function destroy(Partner $partner): JsonResponse
     {
         $partner->delete();

@@ -8,6 +8,8 @@ use App\Models\Financial\PartnerProfitLoss;
 use App\Models\Financial\PartnerRevenue;
 use App\Models\Financial\PartnerRoi;
 use App\Models\Partner\Partner;
+use App\Models\SupportCenter\PartnerSupportCenter;
+use App\Models\SupportCenter\PartnerSupportCenterStaff;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -50,17 +52,26 @@ class FinancialCalculationService
             ->where('cost_type', 'Commission')
             ->sum('amount');
 
+        // SC Operating Costs (mirrored from SC Cost module via PartnerCost)
         $supportCenterCost = PartnerCost::where('partner_id', $partner->id)
             ->whereBetween('cost_date', [$startDate, $endDate])
             ->where('cost_type', 'Support Center Cost')
             ->sum('amount');
+        // This is NOT mirrored to PartnerCost, so we aggregate it separately here.
+        $scStaffCost = PartnerSupportCenter::where('partner_id', $partner->id)
+            ->get()
+            ->sum(function ($center) {
+                return PartnerSupportCenterStaff::where('support_center_id', $center->id)
+                    ->where('status', 'Active')
+                    ->sum('monthly_cost');
+            });
 
         $operatingCost = PartnerCost::where('partner_id', $partner->id)
             ->whereBetween('cost_date', [$startDate, $endDate])
             ->whereNotIn('cost_type', ['Bandwidth Cost', 'Upstream Cost', 'Direct Cost', 'Commission', 'Support Center Cost'])
             ->sum('amount');
 
-        $totalCost = $directCost + $commissionCost + $supportCenterCost + $operatingCost;
+        $totalCost = $directCost + $commissionCost + $supportCenterCost + $scStaffCost + $operatingCost;
 
         // 3. Formulas
         $grossProfit = $totalRevenue - $directCost;
@@ -88,7 +99,7 @@ class FinancialCalculationService
                 'gross_profit'          => $grossProfit,
                 'operating_cost'        => $operatingCost,
                 'commission_cost'       => $commissionCost,
-                'support_center_cost'   => $supportCenterCost,
+                'support_center_cost'   => round($supportCenterCost + $scStaffCost, 2), // includes staff cost
                 'net_profit'            => $netProfit,
                 'profit_margin_percent' => $marginPct,
                 'total_invoiced'        => $totalInvoiced,

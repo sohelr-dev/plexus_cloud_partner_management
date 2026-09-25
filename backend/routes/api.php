@@ -9,9 +9,12 @@ use App\Http\Controllers\Api\V1\Financial\PaymentController;
 use App\Http\Controllers\Api\V1\Financial\RevenueController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Partner\PartnerController;
+use App\Http\Controllers\Api\V1\Partner\SupportCenterController;
+use App\Http\Controllers\Api\V1\Bandwidth\BandwidthController;
+use App\Http\Controllers\Api\V1\Equipment\EquipmentController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', HealthController::class)->name('api.health');
+Route::get('/health', [HealthController::class, '__invoke'])->name('api.health');
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
@@ -19,22 +22,22 @@ Route::prefix('auth')->group(function () {
     // Protected auth routes (need valid token)
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::get('/me',     [AuthController::class, 'me'])->name('auth.me');
+        Route::get('/me',      [AuthController::class, 'me'])->name('auth.me');
     });
 });
 
 Route::middleware('auth:sanctum')->group(function () {
 
     // --- Partners ---
-    Route::prefix('partners')->controller(PartnerController::class)->group(function () {
-        Route::get('/lookups',              'lookups')->middleware('permission:partner.view')->name('partners.lookups');
-        Route::get('/',                    'index')->middleware('permission:partner.view')->name('partners.index');
-        Route::post('/',                   'store')->middleware('permission:partner.create')->name('partners.store');
-        Route::get('/{partner}',           'show')->middleware('permission:partner.view')->name('partners.show');
-        Route::match(['put','patch'], '/{partner}', 'update')->middleware('permission:partner.update')->name('partners.update');
-        Route::put('/{partner}/status',    'changeStatus')->middleware('permission:partner.update')->name('partners.status');
-        Route::post('/{partner}/approve',   'approve')->middleware('permission:partner.approve')->name('partners.approve');
-        Route::delete('/{partner}',        'destroy')->middleware('permission:partner.delete')->name('partners.destroy');
+    Route::prefix('partners')->group(function () {
+        Route::get('/lookups',              [PartnerController::class, 'lookups'])->middleware('permission:partner.view')->name('partners.lookups');
+        Route::get('/',                     [PartnerController::class, 'index'])->middleware('permission:partner.view')->name('partners.index');
+        Route::post('/',                    [PartnerController::class, 'store'])->middleware('permission:partner.create')->name('partners.store');
+        Route::get('/{partner}',            [PartnerController::class, 'show'])->middleware('permission:partner.view')->name('partners.show');
+        Route::match(['put','patch'], '/{partner}', [PartnerController::class, 'update'])->middleware('permission:partner.update')->name('partners.update');
+        Route::put('/{partner}/status',     [PartnerController::class, 'changeStatus'])->middleware('permission:partner.update')->name('partners.status');
+        Route::post('/{partner}/approve',   [PartnerController::class, 'approve'])->middleware('permission:partner.approve')->name('partners.approve');
+        Route::delete('/{partner}',         [PartnerController::class, 'destroy'])->middleware('permission:partner.delete')->name('partners.destroy');
     });
 
     // --- Financial Module ---
@@ -67,59 +70,98 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:payment.create');
     });
 
-    // --- Bandwidth Module (Phase 5.1) ---
+    // --- Bandwidth Module  ---
     Route::prefix('bandwidth')->group(function () {
-        Route::get('/summary/{partner}', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'summary'])
+        Route::get('/summary/{partner}', [BandwidthController::class, 'summary'])
             ->middleware('permission:partner.view');
-        Route::post('/allocations/{partner}', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'storeAllocation'])
+        Route::post('/allocations/{partner}', [BandwidthController::class, 'storeAllocation'])
             ->middleware('permission:partner.update');
-        Route::post('/change-requests/{partner}', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'requestChange'])
+        Route::post('/change-requests/{partner}', [BandwidthController::class, 'requestChange'])
             ->middleware('permission:partner.update');
-        Route::get('/pending-approvals', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'pendingApprovals'])
+        Route::get('/pending-approvals', [BandwidthController::class, 'pendingApprovals'])
             ->middleware('permission:partner.approve');
-        Route::post('/changes/{change}/approve', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'approveChange'])
+        Route::post('/changes/{change}/approve', [BandwidthController::class, 'approveChange'])
             ->middleware('permission:partner.approve');
-        Route::post('/changes/{change}/reject', [\App\Http\Controllers\Api\V1\Bandwidth\BandwidthController::class, 'rejectChange'])
+        Route::post('/changes/{change}/reject', [BandwidthController::class, 'rejectChange'])
             ->middleware('permission:partner.approve');
     });
 
     // --- Equipment & End Devices Module ---
     Route::prefix('equipment')->group(function () {
-        Route::get('/summary/{partner}', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'summary'])
+        Route::get('/summary/{partner}', [EquipmentController::class, 'summary'])
             ->middleware('permission:partner.view');
-        Route::post('/assets/{partner}', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'storeEquipment'])
+        Route::post('/assets/{partner}', [EquipmentController::class, 'storeEquipment'])
             ->middleware('permission:partner.update');
-        Route::post('/end-devices/{partner}', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'storeEndDevice'])
+        Route::post('/end-devices/{partner}', [EquipmentController::class, 'storeEndDevice'])
             ->middleware('permission:partner.update');
-        Route::post('/maintenance/{equipment}', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'logMaintenance'])
+        Route::post('/maintenance/{equipment}', [EquipmentController::class, 'logMaintenance'])
             ->middleware('permission:partner.update');
-        Route::post('/{equipment}/replace', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'replace'])
+        Route::post('/{equipment}/replace', [EquipmentController::class, 'replace'])
             ->middleware('permission:partner.update');
-        Route::post('/{equipment}/return', [\App\Http\Controllers\Api\V1\Equipment\EquipmentController::class, 'returnEquipment'])
+        Route::post('/{equipment}/return', [EquipmentController::class, 'returnEquipment'])
             ->middleware('permission:partner.update');
     });
 
     // --- Commission Module ---
-    Route::prefix('commission')->controller(CommissionController::class)->group(function () {
+    Route::prefix('commission')->group(function () {
         // Global Dashboard (system-wide — Commission Dashboard Page)
-        Route::get('/dashboard',                  'globalDashboard')->middleware('permission:partner.view');
+        Route::get('/dashboard',                  [CommissionController::class, 'globalDashboard'])->middleware('permission:partner.view');
 
         // Per-partner summary
-        Route::get('/summary/{partner}',          'summary')->middleware('permission:partner.view');
+        Route::get('/summary/{partner}',          [CommissionController::class, 'summary'])->middleware('permission:partner.view');
 
         // Commission Rules CRUD
-        Route::post('/rules/{partner}',           'storeRule')->middleware('permission:partner.update');
-        Route::put('/rules/{rule}',               'updateRule')->middleware('permission:partner.update');
-        Route::delete('/rules/{rule}',            'deactivateRule')->middleware('permission:partner.update');
+        Route::post('/rules/{partner}',           [CommissionController::class, 'storeRule'])->middleware('permission:partner.update');
+        Route::put('/rules/{rule}',               [CommissionController::class, 'updateRule'])->middleware('permission:partner.update');
+        Route::delete('/rules/{rule}',            [CommissionController::class, 'deactivateRule'])->middleware('permission:partner.update');
 
         // Commission Records
-        Route::post('/records/{partner}',         'storeCommission')->middleware('permission:partner.update');
+        Route::post('/records/{partner}',         [CommissionController::class, 'storeCommission'])->middleware('permission:partner.update');
 
-        Route::post('/{commission}/approve',      'approve')->middleware('permission:partner.approve');
-        Route::post('/{commission}/reject',       'reject')->middleware('permission:partner.approve');
-        Route::post('/{commission}/pay',          'pay')->middleware('permission:partner.approve');
-        Route::post('/{commission}/reverse',      'reverse')->middleware('permission:partner.approve');
+        Route::post('/{commission}/approve',      [CommissionController::class, 'approve'])->middleware('permission:partner.approve');
+        Route::post('/{commission}/reject',       [CommissionController::class, 'reject'])->middleware('permission:partner.approve');
+        Route::post('/{commission}/pay',          [CommissionController::class, 'pay'])->middleware('permission:partner.approve');
+        Route::post('/{commission}/reverse',      [CommissionController::class, 'reverse'])->middleware('permission:partner.approve');
     });
+
+    //Support Center Module
+    Route::prefix('partners/{partner}/support-centers')->group(function () {
+        Route::get('/',                    [SupportCenterController::class, 'index'])->middleware('permission:partner.view');
+        Route::post('/',                   [SupportCenterController::class, 'store'])->middleware('permission:partner.update');
+    });
+
+    Route::prefix('support-centers')->group(function () {
+        Route::match(['put','patch'], '/{center}',           [SupportCenterController::class, 'update'])->middleware('permission:partner.update');
+        Route::put('/{center}/status',                       [SupportCenterController::class, 'changeStatus'])->middleware('permission:partner.approve');
+        Route::get('/{center}/staff',                        [SupportCenterController::class, 'staff'])->middleware('permission:partner.view');
+        Route::post('/{center}/staff',                       [SupportCenterController::class, 'storeStaff'])->middleware('permission:partner.update');
+        Route::get('/{center}/services',                     [SupportCenterController::class, 'services'])->middleware('permission:partner.view');
+        Route::post('/{center}/services',                    [SupportCenterController::class, 'storeService'])->middleware('permission:partner.update');
+        Route::get('/{center}/equipment',                    [SupportCenterController::class, 'equipment'])->middleware('permission:partner.view');
+        Route::post('/{center}/equipment',                   [SupportCenterController::class, 'storeEquipment'])->middleware('permission:partner.update');
+        Route::match(['put','patch'], '/{center}/equipment/{equipment}', [SupportCenterController::class, 'updateEquipment'])->middleware('permission:partner.update');
+        Route::delete('/{center}/equipment/{equipment}',     [SupportCenterController::class, 'deleteEquipment'])->middleware('permission:partner.update');
+        Route::get('/{center}/costs',                        [SupportCenterController::class, 'costs'])->middleware('permission:partner.view');
+        Route::post('/{center}/costs',                       [SupportCenterController::class, 'storeCost'])->middleware('permission:partner.update');
+        Route::match(['put','patch'], '/{center}/costs/{cost}', [SupportCenterController::class, 'updateCost'])->middleware('permission:partner.update');
+        Route::delete('/{center}/costs/{cost}',              [SupportCenterController::class, 'deleteCost'])->middleware('permission:partner.update');
+        Route::get('/{center}/performance',                  [SupportCenterController::class, 'performance'])->middleware('permission:partner.view');
+        Route::get('/{center}/history',                      [SupportCenterController::class, 'history'])->middleware('permission:partner.view');
+    });
+
+    // --- SC Staff / Service direct resource routes ---
+    Route::prefix('support-center-staff')->group(function () {
+        Route::match(['put','patch'], '/{staff}', [SupportCenterController::class, 'updateStaff'])->middleware('permission:partner.update');
+        Route::delete('/{staff}',                [SupportCenterController::class, 'deleteStaff'])->middleware('permission:partner.update');
+    });
+
+    Route::prefix('support-center-services')->group(function () {
+        Route::match(['put','patch'], '/{service}', [SupportCenterController::class, 'updateService'])->middleware('permission:partner.update');
+        Route::delete('/{service}',                 [SupportCenterController::class, 'deleteService'])->middleware('permission:partner.update');
+    });
+
+    // --- Global Support Center Dashboard ---
+    Route::get('/support-centers/global-dashboard', [SupportCenterController::class, 'globalDashboard'])->middleware('permission:partner.view');
 
     // --- Audit Logs ---
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
