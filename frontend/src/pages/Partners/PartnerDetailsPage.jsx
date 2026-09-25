@@ -28,7 +28,13 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  XCircle
+  XCircle,
+  TrendingDown,
+  HelpCircle,
+  Target,
+  Users,
+  BarChart3,
+  Megaphone
 } from 'lucide-react'
 import StatusActionModal from '../../components/common/StatusActionModal'
 import api from '../../api/client'
@@ -37,12 +43,25 @@ import { fetchBandwidthSummary, createBandwidthAllocation, requestBandwidthChang
 import { fetchEquipmentSummary, createEquipmentAsset, registerEndDevice, logEquipmentMaintenance, replaceEquipment, returnEquipment } from '../../api/equipment'
 import { fetchCommissionSummary, createCommissionRule, createCommission, approveCommission, rejectCommission, payCommission } from '../../api/commission'
 import { fetchSupportCenterSummary, createSupportCenter, changeSupportCenterStatus, addSupportCenterStaff, addSupportCenterCost, addSupportCenterEquipment, fetchSupportCenterHistory, deleteSupportCenterStaff, deleteSupportCenterCost, deleteSupportCenterEquipment } from '../../api/supportCenter'
+import {
+  fetchMarketingSummary,
+  fetchCustomerGrowth,
+  recordCustomerMetric,
+  fetchSalesPerformance,
+  recordSalesMetric,
+  fetchPackagePerformance,
+  fetchAreaMetrics,
+  fetchCampaigns,
+  createCampaign,
+  deleteCampaign
+} from '../../api/marketing'
 import { usePermissions } from '../../context/PermissionContext'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'business', label: 'Business Info', icon: Building2 },
   { id: 'models', label: 'Business Models', icon: Layers },
+  { id: 'marketing', label: 'Marketing & Sales', icon: TrendingUp },
   { id: 'financial', label: 'Financials & P&L', icon: DollarSign },
   { id: 'bandwidth', label: 'Bandwidth', icon: Wifi },
   { id: 'devices', label: 'Equipment & Devices', icon: HardDrive },
@@ -106,6 +125,43 @@ export default function PartnerDetailsPage() {
     queryKey: ['partnerPayments', id],
     queryFn: () => fetchPayments({ partner_id: id }),
     enabled: activeTab === 'financial',
+  })
+
+  // 4. Fetch Marketing Module Data 
+  const { data: mktSummary } = useQuery({
+    queryKey: ['marketingSummary', id],
+    queryFn: () => fetchMarketingSummary(id),
+    enabled: activeTab === 'marketing',
+  })
+
+  const { data: growthMetrics } = useQuery({
+    queryKey: ['marketingGrowth', id],
+    queryFn: () => fetchCustomerGrowth(id),
+    enabled: activeTab === 'marketing',
+  })
+
+  const { data: salesMetrics } = useQuery({
+    queryKey: ['marketingSales', id],
+    queryFn: () => fetchSalesPerformance(id),
+    enabled: activeTab === 'marketing',
+  })
+
+  const { data: packageMetrics } = useQuery({
+    queryKey: ['marketingPackage', id],
+    queryFn: () => fetchPackagePerformance(id),
+    enabled: activeTab === 'marketing',
+  })
+
+  const { data: areaMetrics } = useQuery({
+    queryKey: ['marketingArea', id],
+    queryFn: () => fetchAreaMetrics(id),
+    enabled: activeTab === 'marketing',
+  })
+
+  const { data: campaignsList } = useQuery({
+    queryKey: ['marketingCampaigns', id],
+    queryFn: () => fetchCampaigns(id),
+    enabled: activeTab === 'marketing',
   })
 
   // Mutations
@@ -323,7 +379,7 @@ export default function PartnerDetailsPage() {
     },
   })
 
-  // --- Support Centers State & Query (Phase 6) ---
+  // --- Support Centers State & Query  ---
   const [activeScModal, setActiveScModal] = useState(null) // 'branch' | 'staff' | 'cost' | 'equipment'
   const [selectedSc, setSelectedSc] = useState(null) // branch row for child modals
   const [scBranchForm, setScBranchForm] = useState({
@@ -382,6 +438,61 @@ export default function PartnerDetailsPage() {
   const deleteScEquipmentMutation = useMutation({
     mutationFn: ({ centerId, equipmentId }) => deleteSupportCenterEquipment(centerId, equipmentId),
     onSuccess: scInvalidate,
+  })
+
+  // --- Marketing State & Mutations  ---
+  const [activeMktModal, setActiveMktModal] = useState(null) // 'campaign' | 'customer_metric' | 'sales_metric'
+  const [mktSubTab, setMktSubTab] = useState('campaigns') // 'campaigns' | 'growth' | 'sales' | 'distribution'
+  const [campaignForm, setCampaignForm] = useState({
+    name: '', type: 'Promotion', start_date: new Date().toISOString().split('T')[0], end_date: new Date().toISOString().split('T')[0],
+    target_customers: '', target_revenue: '', campaign_cost: '', status: 'Active', remarks: ''
+  })
+  const [custMetricForm, setCustMetricForm] = useState({
+    metric_date: new Date().toISOString().split('T')[0], period_type: 'Monthly',
+    opening_customers: '', new_customers: '', reactivations: 0, renewals: 0, suspensions: 0, terminations: 0
+  })
+  const [salesMetricForm, setSalesMetricForm] = useState({
+    metric_date: new Date().toISOString().split('T')[0], period_type: 'Monthly',
+    sales_target: '', actual_sales: '', new_sales_count: '', total_revenue: ''
+  })
+
+  const mktInvalidate = () => {
+    queryClient.invalidateQueries(['marketingSummary', id])
+    queryClient.invalidateQueries(['marketingGrowth', id])
+    queryClient.invalidateQueries(['marketingSales', id])
+    queryClient.invalidateQueries(['marketingPackage', id])
+    queryClient.invalidateQueries(['marketingArea', id])
+    queryClient.invalidateQueries(['marketingCampaigns', id])
+  }
+
+  const addCampaignMutation = useMutation({
+    mutationFn: (data) => createCampaign(id, data),
+    onSuccess: () => {
+      mktInvalidate()
+      setActiveMktModal(null)
+      setCampaignForm({ name: '', type: 'Promotion', start_date: new Date().toISOString().split('T')[0], end_date: new Date().toISOString().split('T')[0], target_customers: '', target_revenue: '', campaign_cost: '', status: 'Active', remarks: '' })
+    }
+  })
+
+  const deleteCampaignMutation = useMutation({
+    mutationFn: (cid) => deleteCampaign(cid),
+    onSuccess: mktInvalidate
+  })
+
+  const addCustMetricMutation = useMutation({
+    mutationFn: (data) => recordCustomerMetric(id, data),
+    onSuccess: () => {
+      mktInvalidate()
+      setActiveMktModal(null)
+    }
+  })
+
+  const addSalesMetricMutation = useMutation({
+    mutationFn: (data) => recordSalesMetric(id, data),
+    onSuccess: () => {
+      mktInvalidate()
+      setActiveMktModal(null)
+    }
   })
 
 
@@ -766,6 +877,441 @@ export default function PartnerDetailsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB 3: MARKETING */}
+        {activeTab === 'marketing' && (
+          <div>
+            {/* Header with Title and Global Action Buttons */}
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+              <div>
+                <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
+                  <TrendingUp size={20} /> Marketing Analysis & Sales Performance
+                </h5>
+                <p className="text-muted small mb-0">Customer growth, churn analysis, sales targets and campaign ROI (PRD §20-27).</p>
+              </div>
+
+              <div className="d-flex gap-2">
+                {can('partner.update') && (
+                  <>
+                    <button className="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm" onClick={() => setActiveMktModal('campaign')}>
+                      <Plus size={14} /> Launch Campaign
+                    </button>
+                    <button className="btn btn-sm btn-outline-success d-flex align-items-center gap-1" onClick={() => setActiveMktModal('growth')}>
+                      <Plus size={14} /> Record Growth
+                    </button>
+                    <button className="btn btn-sm btn-outline-info d-flex align-items-center gap-1" onClick={() => setActiveMktModal('sales')}>
+                      <Plus size={14} /> Record Sales
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Marketing KPI Summary Banner */}
+            <div className="card border-0 shadow-sm mb-4 bg-light">
+              <div className="card-body p-3">
+                <div className="row g-3 text-center">
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">CAMPAIGNS (ACTIVE)</div>
+                    <div className="fw-bold fs-4 text-primary">
+                      {mktSummary?.total_campaigns ?? campaignsList?.length ?? 0}
+                      <span className="fs-7 text-muted ms-1">({mktSummary?.active_campaigns ?? 0} active)</span>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">CAMPAIGN BUDGET</div>
+                    <div className="fw-bold fs-4 text-secondary">৳{(mktSummary?.total_campaign_cost ?? 0).toLocaleString()}</div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">CAMPAIGN PROFIT</div>
+                    <div className="fw-bold fs-4 text-success">৳{(mktSummary?.total_campaign_profit ?? 0).toLocaleString()}</div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">
+                      AVG ROI
+                      <span title="Formula: ((Revenue - Cost) / Cost) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                    </div>
+                    <div className={`fw-bold fs-4 ${(mktSummary?.avg_campaign_roi ?? 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {mktSummary?.avg_campaign_roi ?? 0}%
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">ACTIVE CUSTOMERS</div>
+                    <div className="fw-bold fs-4 text-dark">{mktSummary?.current_customers ?? 0}</div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">
+                      NET GROWTH
+                      <span title="Formula: (New / Opening) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                    </div>
+                    <div className="fw-bold fs-4 text-success d-flex align-items-center justify-content-center">
+                      <TrendingUp size={16} className="me-1" />+{mktSummary?.latest_growth_rate ?? 0}%
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">
+                      CHURN RATE
+                      <span title="Formula: (Terminated / Opening Active) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                    </div>
+                    <div className={`fw-bold fs-4 ${(mktSummary?.latest_churn_rate ?? 0) > 5 ? 'text-danger' : 'text-success'} d-flex align-items-center justify-content-center`}>
+                      <TrendingDown size={16} className="me-1" />{mktSummary?.latest_churn_rate ?? 0}%
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3 col-xl">
+                    <div className="text-muted fs-8">
+                      SALES TARGET
+                      <span title="Formula: (Actual Sales / Target Sales) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                    </div>
+                    <div className="fw-bold fs-4 text-info">{mktSummary?.sales_achievement_rate ?? 0}%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-Tab Navigation Pills */}
+            <div className="d-flex flex-wrap gap-2 mb-3 border-bottom pb-2">
+              <button
+                className={`btn btn-sm rounded-pill px-3 d-flex align-items-center gap-1 ${mktSubTab === 'campaigns' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setMktSubTab('campaigns')}
+              >
+                <Megaphone size={14} /> Campaigns & ROI ({campaignsList?.length || 0})
+              </button>
+              <button
+                className={`btn btn-sm rounded-pill px-3 d-flex align-items-center gap-1 ${mktSubTab === 'growth' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setMktSubTab('growth')}
+              >
+                <Users size={14} /> Customer Growth & Churn ({growthMetrics?.length || 0})
+              </button>
+              <button
+                className={`btn btn-sm rounded-pill px-3 d-flex align-items-center gap-1 ${mktSubTab === 'sales' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setMktSubTab('sales')}
+              >
+                <Target size={14} /> Sales Performance ({salesMetrics?.length || 0})
+              </button>
+              <button
+                className={`btn btn-sm rounded-pill px-3 d-flex align-items-center gap-1 ${mktSubTab === 'distribution' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setMktSubTab('distribution')}
+              >
+                <BarChart3 size={14} /> Package & Area Breakdown
+              </button>
+            </div>
+
+            {/* SUB-PANEL 1: CAMPAIGNS */}
+            {mktSubTab === 'campaigns' && (
+              <div className="card border shadow-sm rounded-3">
+                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <Megaphone size={16} className="text-primary" /> Active & Planned Marketing Campaigns
+                  </h6>
+                  {can('partner.update') && (
+                    <button className="btn btn-xs btn-outline-primary py-1 px-2" onClick={() => setActiveMktModal('campaign')}>
+                      <Plus size={12} className="me-1" /> New Campaign
+                    </button>
+                  )}
+                </div>
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light fs-7">
+                      <tr>
+                        <th>Campaign Name</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Target vs Actual Cust.</th>
+                        <th>Budget / Cost (৳)</th>
+                        <th>Revenue (৳)</th>
+                        <th>Net Profit (৳)</th>
+                        <th>
+                          ROI %
+                          <span title="Return on Investment = (Profit / Cost) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                        </th>
+                        <th>Conversion</th>
+                        <th>Status</th>
+                        {can('partner.update') && <th className="text-end pe-3">Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="fs-7">
+                      {campaignsList?.length > 0 ? (
+                        campaignsList.map((c) => (
+                          <tr key={c.id}>
+                            <td className="fw-bold text-dark">{c.name}</td>
+                            <td><span className="badge bg-primary-subtle text-primary">{c.type || 'Promotion'}</span></td>
+                            <td className="text-muted small">
+                              {c.start_date ? String(c.start_date).split('T')[0] : '—'} <span className="text-muted">→</span> {c.end_date ? String(c.end_date).split('T')[0] : '—'}
+                            </td>
+                            <td>
+                              <span className="fw-semibold">{c.target_customers}</span> / <span className="fw-bold text-success">{c.actual_customers}</span>
+                            </td>
+                            <td className="text-danger fw-semibold">৳{Number(c.campaign_cost || 0).toLocaleString()}</td>
+                            <td className="text-dark">৳{Number(c.actual_revenue || 0).toLocaleString()}</td>
+                            <td className={`fw-bold ${Number(c.campaign_profit || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                              ৳{Number(c.campaign_profit || 0).toLocaleString()}
+                            </td>
+                            <td>
+                              <span className={`badge ${Number(c.roi) >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
+                                {c.roi}%
+                              </span>
+                            </td>
+                            <td>
+                              <span className="badge bg-secondary-subtle text-secondary">{c.conversion_rate || 0}%</span>
+                            </td>
+                            <td>
+                              <span className={`badge ${c.status === 'Active' ? 'bg-success' : c.status === 'Planned' ? 'bg-info' : 'bg-secondary'}`}>
+                                {c.status}
+                              </span>
+                            </td>
+                            {can('partner.update') && (
+                              <td className="text-end pe-3">
+                                <button
+                                  className="btn btn-xs btn-outline-danger py-0 px-2"
+                                  style={{ fontSize: '0.7rem' }}
+                                  disabled={deleteCampaignMutation.isPending}
+                                  onClick={() => {
+                                    if (window.confirm(`Delete campaign "${c.name}"?`)) {
+                                      deleteCampaignMutation.mutate(c.id)
+                                    }
+                                  }}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={can('partner.update') ? 11 : 10} className="text-center py-4 text-muted">
+                            No campaigns registered yet. Click "Launch Campaign" to configure promotions and track ROI.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 2: CUSTOMER GROWTH & CHURN */}
+            {mktSubTab === 'growth' && (
+              <div className="card border shadow-sm rounded-3">
+                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <Users size={16} className="text-success" /> Customer Base Lifecycle & Churn Analysis
+                  </h6>
+                  {can('partner.update') && (
+                    <button className="btn btn-xs btn-outline-success py-1 px-2" onClick={() => setActiveMktModal('growth')}>
+                      <Plus size={12} className="me-1" /> Record Monthly Growth
+                    </button>
+                  )}
+                </div>
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light fs-7">
+                      <tr>
+                        <th>Metric Date</th>
+                        <th>Period</th>
+                        <th>Opening</th>
+                        <th>New Acquisitions</th>
+                        <th>Reactivated</th>
+                        <th>Renewals</th>
+                        <th>Suspended</th>
+                        <th>Churned / Lost</th>
+                        <th>Closing Active Base</th>
+                        <th>
+                          Net Growth Rate
+                          <span title="Formula: (New / Opening) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                        </th>
+                        <th>
+                          Churn Rate
+                          <span title="Formula: (Terminated / Opening Active) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="fs-7">
+                      {growthMetrics?.length > 0 ? (
+                        growthMetrics.map((m) => (
+                          <tr key={m.id}>
+                            <td className="fw-semibold">{m.metric_date ? String(m.metric_date).split('T')[0] : '—'}</td>
+                            <td><span className="badge bg-secondary-subtle text-secondary">{m.period_type}</span></td>
+                            <td>{m.opening_customers}</td>
+                            <td className="text-success fw-bold">+{m.new_customers}</td>
+                            <td>{m.reactivations || 0}</td>
+                            <td>{m.renewals || 0}</td>
+                            <td className="text-warning-emphasis">{m.suspensions || 0}</td>
+                            <td className="text-danger fw-bold">-{m.churn_customers || m.terminations || 0}</td>
+                            <td className="fw-bold text-dark">{m.closing_customers}</td>
+                            <td>
+                              <span className={`badge ${Number(m.growth_rate) >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} d-inline-flex align-items-center gap-1`}>
+                                <TrendingUp size={12} /> {m.growth_rate}%
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${Number(m.churn_rate) > 5 ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'} d-inline-flex align-items-center gap-1`}>
+                                <TrendingDown size={12} /> {m.churn_rate}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="11" className="text-center py-4 text-muted">
+                            No growth/churn metrics recorded. Click "Record Growth" to log customer movements.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 3: SALES PERFORMANCE */}
+            {mktSubTab === 'sales' && (
+              <div className="card border shadow-sm rounded-3">
+                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <Target size={16} className="text-info" /> Sales Targets, Achievements & Monthly Revenue
+                  </h6>
+                  {can('partner.update') && (
+                    <button className="btn btn-xs btn-outline-info py-1 px-2" onClick={() => setActiveMktModal('sales')}>
+                      <Plus size={12} className="me-1" /> Record Sales Entry
+                    </button>
+                  )}
+                </div>
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light fs-7">
+                      <tr>
+                        <th>Metric Date</th>
+                        <th>Period</th>
+                        <th>Sales Target (৳)</th>
+                        <th>Actual Sales (৳)</th>
+                        <th>
+                          Achievement % & Progress Bar
+                          <span title="Formula: (Actual Sales / Target Sales) × 100" style={{ cursor: 'help' }} className="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1">?</span>
+                        </th>
+                        <th>New Units</th>
+                        <th>Total Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="fs-7">
+                      {salesMetrics?.length > 0 ? (
+                        salesMetrics.map((s) => {
+                          const pct = Number(s.achievement_percentage || 0)
+                          return (
+                            <tr key={s.id}>
+                              <td className="fw-semibold">{s.metric_date ? String(s.metric_date).split('T')[0] : '—'}</td>
+                              <td><span className="badge bg-secondary-subtle text-secondary">{s.period_type}</span></td>
+                              <td>৳{Number(s.sales_target || 0).toLocaleString()}</td>
+                              <td className="fw-bold text-primary">৳{Number(s.actual_sales || 0).toLocaleString()}</td>
+                              <td>
+                                <div className="d-flex align-items-center gap-2" style={{ minWidth: '170px' }}>
+                                  <div className="progress flex-grow-1" style={{ height: '7px' }}>
+                                    <div
+                                      className={`progress-bar ${pct >= 100 ? 'bg-success' : pct >= 70 ? 'bg-warning' : 'bg-danger'}`}
+                                      style={{ width: `${Math.min(100, pct)}%` }}
+                                    />
+                                  </div>
+                                  <span className={`badge ${pct >= 100 ? 'bg-success' : pct >= 70 ? 'bg-warning text-dark' : 'bg-danger'}`}>
+                                    {pct}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td>{s.new_sales_count || 0}</td>
+                              <td className="text-success fw-bold">৳{Number(s.total_revenue || 0).toLocaleString()}</td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="text-center py-4 text-muted">
+                            No sales performance entries logged yet. Click "Record Sales" to track partner achievement.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 4: PACKAGE & AREA BREAKDOWN */}
+            {mktSubTab === 'distribution' && (
+              <div className="row g-4">
+                <div className="col-md-6">
+                  <div className="card border shadow-sm rounded-3 h-100">
+                    <div className="card-header bg-white py-3">
+                      <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <BarChart3 size={16} className="text-primary" /> Top Packages Performance
+                      </h6>
+                    </div>
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead className="table-light fs-7">
+                          <tr>
+                            <th>Package</th>
+                            <th>Active Base</th>
+                            <th>New Sales</th>
+                            <th>Total Revenue</th>
+                          </tr>
+                        </thead>
+                        <tbody className="fs-7">
+                          {packageMetrics?.length > 0 ? (
+                            packageMetrics.map((p) => (
+                              <tr key={p.id}>
+                                <td className="fw-bold text-dark">{p.package_name}</td>
+                                <td>{p.customer_count} users</td>
+                                <td className="text-success fw-semibold">+{p.new_sales}</td>
+                                <td className="fw-bold text-success">৳{Number(p.revenue || 0).toLocaleString()}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr><td colSpan="4" className="text-center py-4 text-muted">No package metrics aggregated.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-md-6">
+                  <div className="card border shadow-sm rounded-3 h-100">
+                    <div className="card-header bg-white py-3">
+                      <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <BarChart3 size={16} className="text-info" /> Territory / Zone Distribution
+                      </h6>
+                    </div>
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead className="table-light fs-7">
+                          <tr>
+                            <th>Territory / Zone</th>
+                            <th>Customers</th>
+                            <th>Bandwidth</th>
+                            <th>Total Revenue</th>
+                          </tr>
+                        </thead>
+                        <tbody className="fs-7">
+                          {areaMetrics?.length > 0 ? (
+                            areaMetrics.map((a) => (
+                              <tr key={a.id}>
+                                <td className="fw-bold text-dark">{a.area?.name || a.zone?.name || 'Area #' + a.area_id}</td>
+                                <td>{a.customer_count} users</td>
+                                <td><span className="badge bg-secondary-subtle text-secondary">{a.bandwidth_mbps} Mbps</span></td>
+                                <td className="fw-bold text-success">৳{Number(a.revenue || 0).toLocaleString()}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr><td colSpan="4" className="text-center py-4 text-muted">No area distribution records.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1666,7 +2212,7 @@ export default function PartnerDetailsPage() {
         </div>
       )}
 
-      {/* Bandwidth Modals (Phase 5.1) */}
+      {/* Bandwidth Modals */}
       {activeBwModal === 'allocate' && (
         <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -2303,6 +2849,345 @@ export default function PartnerDetailsPage() {
           </div>
         </div>
       )}
+      {/* Marketing: Launch Campaign Modal */}
+      {activeMktModal === 'campaign' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Launch Marketing Campaign</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveMktModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label small fw-semibold">Campaign Name *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={campaignForm.name}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
+                      placeholder="e.g., Eid Special Promo 2026"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Campaign Type</label>
+                    <select
+                      className="form-select"
+                      value={campaignForm.type}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, type: e.target.value })}
+                    >
+                      {['Promotion', 'Discount', 'Festival Offer', 'Referral Bonus', 'Bandwidth Double', 'Free Installation'].map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Status</label>
+                    <select
+                      className="form-select"
+                      value={campaignForm.status}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, status: e.target.value })}
+                    >
+                      {['Planned', 'Active', 'Completed', 'Cancelled'].map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Start Date *</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={campaignForm.start_date}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, start_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">End Date *</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={campaignForm.end_date}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, end_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Target Customers</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={campaignForm.target_customers}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, target_customers: e.target.value })}
+                      placeholder="100"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Target Revenue (৳)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={campaignForm.target_revenue}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, target_revenue: e.target.value })}
+                      placeholder="50000"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Campaign Budget / Cost (৳)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={campaignForm.campaign_cost}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, campaign_cost: e.target.value })}
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Remarks</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={campaignForm.remarks}
+                      onChange={(e) => setCampaignForm({ ...campaignForm, remarks: e.target.value })}
+                      placeholder="Targeting residential users"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveMktModal(null)}>Cancel</button>
+                <button
+                  className="btn btn-primary d-flex align-items-center gap-1"
+                  disabled={addCampaignMutation.isPending || !campaignForm.name || !campaignForm.start_date || !campaignForm.end_date}
+                  onClick={() => addCampaignMutation.mutate(campaignForm)}
+                >
+                  {addCampaignMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addCampaignMutation.isPending ? 'Launching...' : 'Launch Campaign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Marketing: Record Customer Growth Modal */}
+      {activeMktModal === 'growth' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Record Customer Growth & Churn</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveMktModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info py-2 small">
+                  Formulas (PRD §21): Growth % = (New / Opening) × 100 | Churn % = (Terminated / Opening Active) × 100
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Metric Date *</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={custMetricForm.metric_date}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, metric_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Period Type</label>
+                    <select
+                      className="form-select"
+                      value={custMetricForm.period_type}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, period_type: e.target.value })}
+                    >
+                      {['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'].map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Opening Customers *</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.opening_customers}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, opening_customers: e.target.value })}
+                      placeholder="500"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">New Acquisitions *</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.new_customers}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, new_customers: e.target.value })}
+                      placeholder="45"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Reactivations</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.reactivations}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, reactivations: e.target.value })}
+                      placeholder="10"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Renewals</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.renewals}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, renewals: e.target.value })}
+                      placeholder="420"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Suspensions</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.suspensions}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, suspensions: e.target.value })}
+                      placeholder="5"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Terminations / Churn</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={custMetricForm.terminations}
+                      onChange={(e) => setCustMetricForm({ ...custMetricForm, terminations: e.target.value })}
+                      placeholder="8"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveMktModal(null)}>Cancel</button>
+                <button
+                  className="btn btn-success d-flex align-items-center gap-1"
+                  disabled={addCustMetricMutation.isPending || !custMetricForm.opening_customers}
+                  onClick={() => addCustMetricMutation.mutate(custMetricForm)}
+                >
+                  {addCustMetricMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addCustMetricMutation.isPending ? 'Saving...' : 'Record Metrics'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Marketing: Record Sales Metric Modal */}
+      {activeMktModal === 'sales' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Record Sales Performance</h5>
+                <button type="button" className="btn-close" onClick={() => setActiveMktModal(null)} />
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info py-2 small">
+                  Formula (PRD §22): Achievement % = (Actual Sales / Target Sales) × 100
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Metric Date *</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={salesMetricForm.metric_date}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, metric_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Period Type</label>
+                    <select
+                      className="form-select"
+                      value={salesMetricForm.period_type}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, period_type: e.target.value })}
+                    >
+                      {['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'].map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Sales Target (৳) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-control"
+                      value={salesMetricForm.sales_target}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, sales_target: e.target.value })}
+                      placeholder="150000"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Actual Sales (৳) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-control"
+                      value={salesMetricForm.actual_sales}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, actual_sales: e.target.value })}
+                      placeholder="165000"
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">New Sales Units</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={salesMetricForm.new_sales_count}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, new_sales_count: e.target.value })}
+                      placeholder="25"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-semibold">Total Revenue (৳)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-control"
+                      value={salesMetricForm.total_revenue}
+                      onChange={(e) => setSalesMetricForm({ ...salesMetricForm, total_revenue: e.target.value })}
+                      placeholder="180000"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveMktModal(null)}>Cancel</button>
+                <button
+                  className="btn btn-info text-white d-flex align-items-center gap-1"
+                  disabled={addSalesMetricMutation.isPending || !salesMetricForm.sales_target || !salesMetricForm.actual_sales}
+                  onClick={() => addSalesMetricMutation.mutate(salesMetricForm)}
+                >
+                  {addSalesMetricMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addSalesMetricMutation.isPending ? 'Saving...' : 'Record Sales'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal for Status Change / Approval */}
       {modalState.isOpen && (
         <StatusActionModal
