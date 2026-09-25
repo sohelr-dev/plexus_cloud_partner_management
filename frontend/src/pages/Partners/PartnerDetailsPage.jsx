@@ -36,6 +36,7 @@ import { fetchPartnerPnL, fetchRevenues, createRevenue, fetchCosts, createCost, 
 import { fetchBandwidthSummary, createBandwidthAllocation, requestBandwidthChange, approveBandwidthChange, rejectBandwidthChange } from '../../api/bandwidth'
 import { fetchEquipmentSummary, createEquipmentAsset, registerEndDevice, logEquipmentMaintenance, replaceEquipment, returnEquipment } from '../../api/equipment'
 import { fetchCommissionSummary, createCommissionRule, createCommission, approveCommission, rejectCommission, payCommission } from '../../api/commission'
+import { fetchSupportCenterSummary, createSupportCenter, changeSupportCenterStatus, addSupportCenterStaff, addSupportCenterCost, addSupportCenterEquipment, fetchSupportCenterHistory, deleteSupportCenterStaff, deleteSupportCenterCost, deleteSupportCenterEquipment } from '../../api/supportCenter'
 import { usePermissions } from '../../context/PermissionContext'
 
 const TABS = [
@@ -322,6 +323,67 @@ export default function PartnerDetailsPage() {
     },
   })
 
+  // --- Support Centers State & Query (Phase 6) ---
+  const [activeScModal, setActiveScModal] = useState(null) // 'branch' | 'staff' | 'cost' | 'equipment'
+  const [selectedSc, setSelectedSc] = useState(null) // branch row for child modals
+  const [scBranchForm, setScBranchForm] = useState({
+    center_name: '', branch_type: 'Branch', address: '', contact_number: '', email: '',
+    working_hours: '', weekly_off_day: '', opening_date: '', service_coverage: '', status: 'Active',
+  })
+  const [scStaffForm, setScStaffForm] = useState({ staff_name: '', staff_category: 'Customer Service', designation: '', contact_number: '', email: '', joining_date: '', monthly_cost: '', status: 'Active' })
+  const [scCostForm, setScCostForm] = useState({ cost_date: new Date().toISOString().split('T')[0], cost_type: 'Rent', amount: '', description: '' })
+  const [scEquipmentForm, setScEquipmentForm] = useState({ equipment_type: 'Router', quantity: 1, status: 'Active' })
+
+  const { data: scSummaryRes, isLoading: scLoading } = useQuery({
+    queryKey: ['scSummary', id],
+    queryFn: () => fetchSupportCenterSummary(id),
+    enabled: activeTab === 'support_centers',
+  })
+  const scData = scSummaryRes?.data || {}
+  const scBranches = scData.branches || []
+
+  const scInvalidate = () => queryClient.invalidateQueries(['scSummary', id])
+
+  const createScBranchMutation = useMutation({
+    mutationFn: (data) => createSupportCenter(id, data),
+    onSuccess: () => { scInvalidate(); setActiveScModal(null); setScBranchForm({ center_name: '', branch_type: 'Branch', address: '', contact_number: '', email: '', working_hours: '', weekly_off_day: '', opening_date: '', service_coverage: '', status: 'Active' }) },
+  })
+
+  const scStatusMutation = useMutation({
+    mutationFn: ({ centerId, data }) => changeSupportCenterStatus(centerId, data),
+    onSuccess: scInvalidate,
+  })
+
+  const addScStaffMutation = useMutation({
+    mutationFn: ({ centerId, data }) => addSupportCenterStaff(centerId, data),
+    onSuccess: () => { scInvalidate(); setActiveScModal(null); setScStaffForm({ staff_name: '', staff_category: 'Customer Service', designation: '', contact_number: '', email: '', joining_date: '', monthly_cost: '', status: 'Active' }) },
+  })
+
+  const addScCostMutation = useMutation({
+    mutationFn: ({ centerId, data }) => addSupportCenterCost(centerId, data),
+    onSuccess: () => { scInvalidate(); setActiveScModal(null); setScCostForm({ cost_date: new Date().toISOString().split('T')[0], cost_type: 'Rent', amount: '', description: '' }) },
+  })
+
+  const addScEquipmentMutation = useMutation({
+    mutationFn: ({ centerId, data }) => addSupportCenterEquipment(centerId, data),
+    onSuccess: () => { scInvalidate(); setActiveScModal(null); setScEquipmentForm({ equipment_type: 'Router', quantity: 1, status: 'Active' }) },
+  })
+
+  const deleteScStaffMutation = useMutation({
+    mutationFn: (staffId) => deleteSupportCenterStaff(staffId),
+    onSuccess: scInvalidate,
+  })
+
+  const deleteScCostMutation = useMutation({
+    mutationFn: ({ centerId, costId }) => deleteSupportCenterCost(centerId, costId),
+    onSuccess: scInvalidate,
+  })
+
+  const deleteScEquipmentMutation = useMutation({
+    mutationFn: ({ centerId, equipmentId }) => deleteSupportCenterEquipment(centerId, equipmentId),
+    onSuccess: scInvalidate,
+  })
+
 
   if (isLoading) {
     return (
@@ -541,9 +603,8 @@ export default function PartnerDetailsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`nav-link d-flex align-items-center gap-1.5 px-3 py-2 text-nowrap fw-medium ${
-                  isActive ? 'active bg-primary text-white shadow-sm' : 'text-secondary hover-bg-light'
-                }`}
+                className={`nav-link d-flex align-items-center gap-1.5 px-3 py-2 text-nowrap fw-medium ${isActive ? 'active bg-primary text-white shadow-sm' : 'text-secondary hover-bg-light'
+                  }`}
                 style={{ fontSize: '0.85rem', borderRadius: '8px' }}
               >
                 <Icon size={16} />
@@ -973,7 +1034,7 @@ export default function PartnerDetailsPage() {
                         <td><span className={`badge ${c.change_type === 'Upgrade' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>{c.change_type}</span></td>
                         <td className="fw-bold">{c.previous_mbps} → {c.new_mbps} Mbps ({c.difference_mbps >= 0 ? `+${c.difference_mbps}` : c.difference_mbps})</td>
                         <td className="small">
-                          <span className="text-success fw-semibold">Rev: +৳{Number(c.revenue_impact).toLocaleString()}</span> | <span className="text-danger fw-semibold">Cost: +৳{Number(c.cost_impact).toLocaleString()}</span> <br/>
+                          <span className="text-success fw-semibold">Rev: +৳{Number(c.revenue_impact).toLocaleString()}</span> | <span className="text-danger fw-semibold">Cost: +৳{Number(c.cost_impact).toLocaleString()}</span> <br />
                           <span className="text-primary fw-bold">Net Profit Impact: +৳{Number(c.profit_impact).toLocaleString()}</span>
                         </td>
                         <td className="small">{c.reason || '-'}</td>
@@ -1112,8 +1173,8 @@ export default function PartnerDetailsPage() {
                             <div className="d-flex gap-1">
                               {(eq.status === 'Active' || eq.status === 'Installed' || eq.status === 'Faulty') && can('partner.update') && (
                                 <>
-                                  <button className="btn btn-xs btn-outline-warning py-0 px-2" style={{fontSize:'0.7rem'}} onClick={() => { setEqActionItem(eq); setEqReplaceForm({ reason: '', new_equipment_serial: '', new_equipment_mac: '', new_purchase_cost: '' }); setActiveEqModal('replace'); }}>Replace</button>
-                                  <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{fontSize:'0.7rem'}} onClick={() => { setEqActionItem(eq); setEqReturnForm({ reason: '' }); setActiveEqModal('return'); }}>Return</button>
+                                  <button className="btn btn-xs btn-outline-warning py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => { setEqActionItem(eq); setEqReplaceForm({ reason: '', new_equipment_serial: '', new_equipment_mac: '', new_purchase_cost: '' }); setActiveEqModal('replace'); }}>Replace</button>
+                                  <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => { setEqActionItem(eq); setEqReturnForm({ reason: '' }); setActiveEqModal('return'); }}>Return</button>
                                 </>
                               )}
                             </div>
@@ -1180,20 +1241,20 @@ export default function PartnerDetailsPage() {
               </div>
             </div>
             <div className="row g-3 mb-4">
-              {[{label:'Total Earned',value:commData.total_earned,color:'success'},{label:'Total Paid',value:commData.total_paid,color:'primary'},{label:'Pending',value:commData.total_pending,color:'warning'},{label:'Current Month',value:commData.current_month,color:'info'},{label:'Prev Month',value:commData.previous_month,color:'secondary'},{label:'YTD',value:commData.ytd,color:'dark'}].map(({label,value,color}) => (
+              {[{ label: 'Total Earned', value: commData.total_earned, color: 'success' }, { label: 'Total Paid', value: commData.total_paid, color: 'primary' }, { label: 'Pending', value: commData.total_pending, color: 'warning' }, { label: 'Current Month', value: commData.current_month, color: 'info' }, { label: 'Prev Month', value: commData.previous_month, color: 'secondary' }, { label: 'YTD', value: commData.ytd, color: 'dark' }].map(({ label, value, color }) => (
                 <div key={label} className="col-6 col-md-4 col-xl-2">
                   <div className="pm-card p-3 text-center h-100">
-                    <div className={`text-${color} fw-bold fs-5`}>৳{Number(value||0).toLocaleString()}</div>
-                    <div className="text-muted" style={{fontSize:'0.72rem'}}>{label}</div>
+                    <div className={`text-${color} fw-bold fs-5`}>৳{Number(value || 0).toLocaleString()}</div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem' }}>{label}</div>
                   </div>
                 </div>
               ))}
             </div>
             <div className="d-flex flex-wrap gap-2 mb-4">
-              {commData.by_status && Object.entries(commData.by_status).map(([status,amount]) => (
-                <div key={status} className="px-3 py-1 rounded-pill border d-flex gap-2 align-items-center" style={{fontSize:'0.75rem'}}>
+              {commData.by_status && Object.entries(commData.by_status).map(([status, amount]) => (
+                <div key={status} className="px-3 py-1 rounded-pill border d-flex gap-2 align-items-center" style={{ fontSize: '0.75rem' }}>
                   <span className="fw-semibold">{status}</span>
-                  <span className="text-muted">৳{Number(amount||0).toLocaleString()}</span>
+                  <span className="text-muted">৳{Number(amount || 0).toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -1206,12 +1267,12 @@ export default function PartnerDetailsPage() {
                     <tr key={rule.id}>
                       <td className="fw-semibold">{rule.rule_name}</td>
                       <td><span className="badge bg-primary-subtle text-primary">{rule.commission_type}</span></td>
-                      <td>{['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(rule.commission_type) ? `${rule.rate}%` : `৳${Number(rule.fixed_amount||0).toLocaleString()}`}</td>
-                      <td>{rule.service||'—'}</td>
-                      <td>{rule.maximum_limit>0?`৳${Number(rule.maximum_limit).toLocaleString()}`:'—'}</td>
-                      <td>{rule.effective_date||'—'}</td>
-                      <td>{rule.expiry_date||'—'}</td>
-                      <td><span className={`badge ${rule.status==='Active'?'bg-success-subtle text-success':'bg-danger-subtle text-danger'}`}>{rule.status}</span></td>
+                      <td>{['Percentage', 'Revenue Based', 'Bandwidth Based', 'Custom'].includes(rule.commission_type) ? `${rule.rate}%` : `৳${Number(rule.fixed_amount || 0).toLocaleString()}`}</td>
+                      <td>{rule.service || '—'}</td>
+                      <td>{rule.maximum_limit > 0 ? `৳${Number(rule.maximum_limit).toLocaleString()}` : '—'}</td>
+                      <td>{rule.effective_date || '—'}</td>
+                      <td>{rule.expiry_date || '—'}</td>
+                      <td><span className={`badge ${rule.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>{rule.status}</span></td>
                     </tr>
                   )) : <tr><td colSpan="8" className="text-center py-3 text-muted">No rules — click "Add Rule" to configure the engine.</td></tr>}
                 </tbody>
@@ -1224,22 +1285,22 @@ export default function PartnerDetailsPage() {
                 <tbody className="fs-7">
                   {commData.commissions?.length > 0 ? commData.commissions.map((c) => (
                     <tr key={c.id}>
-                      <td className="fw-semibold">{String(c.period_month).padStart(2,'0')}/{c.period_year}</td>
-                      <td>{c.rule_name||'—'}</td>
-                      <td className="text-muted small">{c.source_reference||'—'}</td>
-                      <td>৳{Number(c.source_amount||0).toLocaleString()}</td>
-                      <td className="fw-bold text-success">৳{Number(c.commission_amount||0).toLocaleString()}</td>
-                      <td><span className={`badge ${c.status==='Paid'?'bg-success text-white':c.status==='Payable'?'bg-success-subtle text-success':c.status==='Approved'?'bg-primary-subtle text-primary':['Rejected','Reversed'].includes(c.status)?'bg-danger-subtle text-danger':['Generated','Pending'].includes(c.status)?'bg-warning-subtle text-warning':'bg-secondary-subtle text-secondary'}`}>{c.status}</span></td>
-                      <td>{c.generated_at||'—'}</td>
-                      <td>{c.approved_by_name||'—'}</td>
+                      <td className="fw-semibold">{String(c.period_month).padStart(2, '0')}/{c.period_year}</td>
+                      <td>{c.rule_name || '—'}</td>
+                      <td className="text-muted small">{c.source_reference || '—'}</td>
+                      <td>৳{Number(c.source_amount || 0).toLocaleString()}</td>
+                      <td className="fw-bold text-success">৳{Number(c.commission_amount || 0).toLocaleString()}</td>
+                      <td><span className={`badge ${c.status === 'Paid' ? 'bg-success text-white' : c.status === 'Payable' ? 'bg-success-subtle text-success' : c.status === 'Approved' ? 'bg-primary-subtle text-primary' : ['Rejected', 'Reversed'].includes(c.status) ? 'bg-danger-subtle text-danger' : ['Generated', 'Pending'].includes(c.status) ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary'}`}>{c.status}</span></td>
+                      <td>{c.generated_at || '—'}</td>
+                      <td>{c.approved_by_name || '—'}</td>
                       <td>
                         <div className="d-flex gap-1 flex-wrap">
-                          {['Generated','Pending','Calculated'].includes(c.status) && (<>
-                            <button className="btn btn-xs btn-success py-0 px-2" style={{fontSize:'0.7rem'}} disabled={approveCommMutation.isPending} onClick={()=>approveCommMutation.mutate({cid:c.id,reason:''})}>{approveCommMutation.isPending?<span className="spinner-border spinner-border-sm"/>:<CheckCircle2 size={12}/>} Approve</button>
-                            <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{fontSize:'0.7rem'}} onClick={()=>{setCommActionId(c.id);setCommActionReason('')}}><XCircle size={12}/> Reject</button>
+                          {['Generated', 'Pending', 'Calculated'].includes(c.status) && (<>
+                            <button className="btn btn-xs btn-success py-0 px-2" style={{ fontSize: '0.7rem' }} disabled={approveCommMutation.isPending} onClick={() => approveCommMutation.mutate({ cid: c.id, reason: '' })}>{approveCommMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : <CheckCircle2 size={12} />} Approve</button>
+                            <button className="btn btn-xs btn-outline-danger py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => { setCommActionId(c.id); setCommActionReason('') }}><XCircle size={12} /> Reject</button>
                           </>)}
-                          {c.status==='Payable' && <button className="btn btn-xs btn-primary py-0 px-2" style={{fontSize:'0.7rem'}} onClick={()=>{setCommPayForm({commissionId:c.id,payment_date:new Date().toISOString().split('T')[0],amount:c.commission_amount,payment_method:'Bank Transfer',reference_number:''});setActiveCommModal('pay')}}>Pay</button>}
-                          {c.status==='Paid' && <span className="text-success small"><CheckCircle2 size={12}/> Paid</span>}
+                          {c.status === 'Payable' && <button className="btn btn-xs btn-primary py-0 px-2" style={{ fontSize: '0.7rem' }} onClick={() => { setCommPayForm({ commissionId: c.id, payment_date: new Date().toISOString().split('T')[0], amount: c.commission_amount, payment_method: 'Bank Transfer', reference_number: '' }); setActiveCommModal('pay') }}>Pay</button>}
+                          {c.status === 'Paid' && <span className="text-success small"><CheckCircle2 size={12} /> Paid</span>}
                         </div>
                       </td>
                     </tr>
@@ -1247,6 +1308,224 @@ export default function PartnerDetailsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Support Centers Tab  */}
+        {activeTab === 'support_centers' && (
+          <div className="pm-card p-4">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+              <div>
+                <h5 className="fw-bold mb-1 d-flex align-items-center gap-2">
+                  <Store size={20} className="text-primary" /> Support Center Branches
+                </h5>
+                <p className="text-muted small mb-0">Branch profile, staff, coverage, operating costs & profit contribution (BR-02, BR-03, BR-04).</p>
+              </div>
+              {can('partner.update') && (
+                <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveScModal('branch')}>
+                  <Plus size={14} /> Add Branch
+                </button>
+              )}
+            </div>
+
+            {/* Summary KPIs */}
+            <div className="row g-3 mb-4">
+              {[{label:'Total Branches',value:scData.total_centers,color:'primary'},{label:'Active',value:scData.active_centers,color:'success'},{label:'Planned',value:scData.planned_centers,color:'info'},{label:'Total Staff',value:scData.total_staff,color:'secondary'},{label:'Vacant Positions',value:scData.vacant_positions,color:'warning'},{label:'Monthly Staff Cost (৳)',value:scData.monthly_staff_cost,color:'danger'}].map(({label,value,color}) => (
+                <div key={label} className="col-6 col-md-4 col-xl-2">
+                  <div className="pm-card p-3 text-center h-100">
+                    <div className={`text-${color} fw-bold fs-5`}>{Number(value||0).toLocaleString()}</div>
+                    <div className="text-muted" style={{fontSize:'0.72rem'}}>{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {scLoading ? (
+              <div className="text-center py-4"><div className="spinner-border text-primary" /></div>
+            ) : (
+              <div className="accordion" id="scBranchAccordion">
+                {scBranches.length > 0 ? scBranches.map((branch, idx) => (
+                  <div key={branch.id} className="accordion-item border mb-2 rounded-3 overflow-hidden">
+                    <h2 className="accordion-header">
+                      <button className={`accordion-button ${idx !== 0 ? 'collapsed' : ''} bg-light fw-semibold`} type="button" data-bs-toggle="collapse" data-bs-target={`#scCollapse${branch.id}`}>
+                        <span className="me-auto d-flex align-items-center gap-2">
+                          <Store size={16} className="text-primary" />
+                          {branch.center_name}
+                          <span className="badge bg-secondary-subtle text-secondary" style={{fontSize:'0.68rem'}}>{branch.sc_id}</span>
+                          <span className="badge bg-dark-subtle text-dark" style={{fontSize:'0.68rem'}}>{branch.branch_code}</span>
+                          <span className={`badge ${branch.status==='Active'?'bg-success-subtle text-success':branch.status==='Planned'?'bg-info-subtle text-info':branch.status==='Suspended'?'bg-warning-subtle text-warning':'bg-danger-subtle text-danger'}`} style={{fontSize:'0.68rem'}}>{branch.status}</span>
+                        </span>
+                        {branch.performance && (
+                          <span className={`me-3 d-none d-md-inline ${Number(branch.performance.profit_contribution) >= 0 ? 'text-success' : 'text-danger'}`} style={{fontSize:'0.78rem'}}>
+                            Profit Contribution: ৳{Number(branch.performance.profit_contribution||0).toLocaleString()}/mo
+                          </span>
+                        )}
+                      </button>
+                    </h2>
+                    <div id={`scCollapse${branch.id}`} className={`accordion-collapse collapse ${idx === 0 ? 'show' : ''}`} data-bs-parent="#scBranchAccordion">
+                      <div className="accordion-body">
+                        {/* Profile row */}
+                        <div className="row g-2 fs-7 mb-3">
+                          <div className="col-md-4"><span className="text-muted">Type:</span> <strong>{branch.branch_type}</strong></div>
+                          <div className="col-md-4"><span className="text-muted">Contact:</span> {branch.contact_number||'—'}</div>
+                          <div className="col-md-4"><span className="text-muted">Email:</span> {branch.email||'—'}</div>
+                          <div className="col-md-4"><span className="text-muted">Manager:</span> <strong className="text-primary">{branch.branch_manager?.name || branch.branch_manager_name || '—'}</strong></div>
+                          <div className="col-md-4"><span className="text-muted">Hours:</span> {branch.working_hours||'—'} {branch.weekly_off_day ? `(Off: ${branch.weekly_off_day})` : ''}</div>
+                          <div className="col-md-4"><span className="text-muted">Opened:</span> {branch.opening_date ? String(branch.opening_date).split('T')[0] : '—'}</div>
+                          <div className="col-12"><span className="text-muted">Address:</span> {branch.address||'—'}</div>
+                          <div className="col-12"><span className="text-muted">Coverage:</span> {branch.service_coverage||'—'}</div>
+                        </div>
+
+                        {/* Performance  */}
+                        {branch.performance && (
+                          <div className="row g-2 mb-3">
+                            {[{label:'Revenue Contribution',value:branch.performance.revenue_contribution,color:'success'},{label:'Operating Cost',value:branch.performance.monthly_operating_cost,color:'danger'},{label:'Staff Cost',value:branch.performance.monthly_staff_cost,color:'warning'},{label:'Profit Contribution',value:branch.performance.profit_contribution,color: Number(branch.performance.profit_contribution) >= 0 ? 'primary':'danger'},{label:'Customers Served (Capacity)',value:branch.performance.customers_served,color:'info'}].map(({label,value,color}) => (
+                              <div key={label} className="col-6 col-md">
+                                <div className="p-2 rounded-3 bg-light border text-center">
+                                  <div className={`fw-bold text-${color}`} style={{fontSize:'0.85rem'}}>৳{Number(value||0).toLocaleString()}</div>
+                                  <div className="text-muted" style={{fontSize:'0.65rem'}}>{label}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Staff */}
+                        <h6 className="fw-bold fs-7 mb-2">Staff ({branch.staff?.length || 0}) {can('partner.update') && <button className="btn btn-xs btn-outline-primary py-0 px-2 ms-2" style={{fontSize:'0.68rem'}} onClick={() => { setSelectedSc(branch); setActiveScModal('staff') }}><Plus size={11}/> Add Staff</button>}</h6>
+                        <div className="table-responsive mb-3">
+                          <table className="table table-sm table-bordered align-middle mb-0" style={{fontSize:'0.72rem'}}>
+                            <thead className="table-light"><tr><th>Name</th><th>Category</th><th>Designation</th><th>Contact</th><th>Monthly Cost (৳)</th><th>Status</th>{can('partner.update') && <th>Action</th>}</tr></thead>
+                            <tbody>
+                              {branch.staff?.length > 0 ? branch.staff.map((s) => (
+                                <tr key={s.id}>
+                                  <td className="fw-semibold">{s.staff_name||<em className="text-muted">Vacant</em>}</td>
+                                  <td><span className="badge bg-primary-subtle text-primary">{s.staff_category}</span></td>
+                                  <td>{s.designation||'—'}</td>
+                                  <td>{s.contact_number||'—'}</td>
+                                  <td>৳{Number(s.monthly_cost||0).toLocaleString()}</td>
+                                  <td><span className={`badge ${s.status==='Active'?'bg-success-subtle text-success':s.status==='Vacant'?'bg-warning-subtle text-warning':'bg-danger-subtle text-danger'}`}>{s.status}</span></td>
+                                  {can('partner.update') && (
+                                    <td>
+                                      <button
+                                        className="btn btn-xs btn-outline-danger py-0 px-1"
+                                        style={{fontSize:'0.65rem'}}
+                                        disabled={deleteScStaffMutation.isPending}
+                                        onClick={() => { if (window.confirm(`Remove staff "${s.staff_name || 'Vacant'}"?`)) deleteScStaffMutation.mutate(s.id) }}
+                                      >
+                                        {deleteScStaffMutation.isPending && deleteScStaffMutation.variables === s.id ? <span className="spinner-border spinner-border-sm" /> : <Trash2 size={10} />}
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              )) : <tr><td colSpan="7" className="text-center text-muted py-2">No staff records.</td></tr>}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Coverage & Equipment  */}
+                        <div className="row g-3 mb-3">
+                          <div className="col-md-6">
+                            <h6 className="fw-bold fs-7 mb-2">Service Coverage</h6>
+                            {branch.services?.length > 0 ? branch.services.map((sv) => (
+                              <div key={sv.id} className="p-2 rounded-3 bg-light border fs-7 mb-1">
+                                <div><strong>{sv.service_area || sv.coverage_area || '—'}</strong></div>
+                                <div className="text-muted">Services: {sv.supported_services||'—'} | Capacity: {sv.customer_capacity||0} customers</div>
+                              </div>
+                            )) : <div className="text-muted fs-7">No coverage defined.</div>}
+                          </div>
+                          <div className="col-md-6">
+                            <h6 className="fw-bold fs-7 mb-2">Branch Equipment ({branch.equipment?.reduce((t,e)=>t+Number(e.quantity||0),0) || 0} units) {can('partner.update') && <button className="btn btn-xs btn-outline-primary py-0 px-2 ms-2" style={{fontSize:'0.68rem'}} onClick={() => { setSelectedSc(branch); setActiveScModal('equipment') }}><Plus size={11}/> Add</button>}</h6>
+                            {branch.equipment?.length > 0 ? branch.equipment.map((eq) => (
+                              <div key={eq.id} className="d-flex justify-content-between align-items-center p-2 rounded-3 bg-light border fs-7 mb-1">
+                                <span><span className="badge bg-info-subtle text-info me-1">{eq.equipment_type}</span> ×{eq.quantity}</span>
+                                <div className="d-flex align-items-center gap-1">
+                                  <span className={`badge ${eq.status==='Active'?'bg-success-subtle text-success':'bg-secondary-subtle text-secondary'}`}>{eq.status}</span>
+                                  {can('partner.update') && (
+                                    <button
+                                      className="btn btn-xs btn-outline-danger py-0 px-1"
+                                      disabled={deleteScEquipmentMutation.isPending}
+                                      onClick={() => { if (window.confirm('Remove this equipment?')) deleteScEquipmentMutation.mutate({ centerId: branch.id, equipmentId: eq.id }) }}
+                                    >
+                                      {deleteScEquipmentMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : <Trash2 size={9} />}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )) : <div className="text-muted fs-7">No equipment recorded.</div>}
+                          </div>
+                        </div>
+
+                        {/* Operating Costs */}
+                        <h6 className="fw-bold fs-7 mb-2">Operating Costs {can('partner.update') && <button className="btn btn-xs btn-outline-danger py-0 px-2 ms-2" style={{fontSize:'0.68rem'}} onClick={() => { setSelectedSc(branch); setActiveScModal('cost') }}><Plus size={11}/> Record Cost</button>} <span className="text-muted fw-normal">(auto-mirrors to P&L — BR-04)</span></h6>
+                        <div className="table-responsive mb-3">
+                          <table className="table table-sm table-bordered align-middle mb-0" style={{fontSize:'0.72rem'}}>
+                            <thead className="table-light"><tr><th>Date</th><th>Cost Type</th><th>Amount (৳)</th><th>Description</th>{can('partner.update') && <th></th>}</tr></thead>
+                            <tbody>
+                              {branch.costs?.length > 0 ? branch.costs.map((c) => (
+                                <tr key={c.id}>
+                                  <td>{c.cost_date ? String(c.cost_date).split('T')[0] : '—'}</td>
+                                  <td><span className="badge bg-danger-subtle text-danger">{c.cost_type}</span></td>
+                                  <td className="fw-bold text-danger">৳{Number(c.amount||0).toLocaleString()}</td>
+                                  <td className="text-muted">{c.description||'—'}</td>
+                                  {can('partner.update') && (
+                                    <td>
+                                      <button
+                                        className="btn btn-xs btn-outline-danger py-0 px-1"
+                                        disabled={deleteScCostMutation.isPending}
+                                        onClick={() => { if (window.confirm('Delete this cost record?')) deleteScCostMutation.mutate({ centerId: branch.id, costId: c.id }) }}
+                                      >
+                                        {deleteScCostMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : <Trash2 size={10} />}
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              )) : <tr><td colSpan="5" className="text-center text-muted py-2">No costs recorded.</td></tr>}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Branch History Timeline */}
+                        {branch.history?.length > 0 && (
+                          <div className="mt-2">
+                            <h6 className="fw-bold fs-7 mb-2">Branch History</h6>
+                            <div className="ps-2 border-start border-2 border-primary-subtle">
+                              {branch.history.slice(0, 5).map((h) => (
+                                <div key={h.id} className="mb-2 fs-7">
+                                  <div className="d-flex align-items-center gap-2">
+                                    <span className="badge bg-primary-subtle text-primary" style={{fontSize:'0.65rem'}}>{h.event_type}</span>
+                                    <span className="text-muted" style={{fontSize:'0.65rem'}}>{h.performed_at ? new Date(h.performed_at).toLocaleDateString() : '—'}</span>
+                                    {h.performed_by && <span className="text-muted" style={{fontSize:'0.65rem'}}>by {h.performed_by.name}</span>}
+                                  </div>
+                                  <div className="text-secondary" style={{fontSize:'0.7rem'}}>{h.description}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Status change  */}
+                        {can('partner.approve') && (
+                          <div className="d-flex gap-2 mt-3 pt-2 border-top">
+                            {['Planned','Active','Temporarily Closed','Suspended','Closed'].filter(s => s !== branch.status).map(s => (
+                              <button key={s} className="btn btn-xs btn-outline-secondary py-0 px-2" style={{fontSize:'0.68rem'}}
+                                disabled={scStatusMutation.isPending}
+                                onClick={() => scStatusMutation.mutate({ centerId: branch.id, data: { status: s, reason: `Status change to ${s} from Partner Profile` } })}>
+                                → {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-4 text-muted">
+                    <Store size={32} className="mb-2 d-block mx-auto text-secondary" />
+                    No Support Center branches yet — click "Add Branch" to create the first one.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1493,10 +1772,10 @@ export default function PartnerDetailsPage() {
                       <div className="p-3 bg-light rounded-3 border mb-3">
                         <h6 className="fw-bold fs-7 text-primary mb-2">Pre-Approval Impact Analysis </h6>
                         <div className="row text-center g-2 fs-7">
-                          <div className="col-3"><span className="text-muted">Capacity Diff:</span> <br/><strong className={diff >= 0 ? 'text-success' : 'text-danger'}>{diff >= 0 ? `+${diff}` : diff} Mbps</strong></div>
-                          <div className="col-3"><span className="text-muted">Est. Revenue:</span> <br/><strong className={revImp >= 0 ? 'text-success' : 'text-danger'}>{revImp >= 0 ? `+৳${revImp.toLocaleString()}` : `৳${revImp.toLocaleString()}`}</strong></div>
-                          <div className="col-3"><span className="text-muted">Est. Cost:</span> <br/><strong className={costImp >= 0 ? 'text-danger' : 'text-success'}>{costImp >= 0 ? `+৳${costImp.toLocaleString()}` : `৳${costImp.toLocaleString()}`}</strong></div>
-                          <div className="col-3"><span className="text-muted">Net Profit:</span> <br/><strong className={profitImp >= 0 ? 'text-primary' : 'text-danger'}>{profitImp >= 0 ? `+৳${profitImp.toLocaleString()}` : `৳${profitImp.toLocaleString()}`}</strong></div>
+                          <div className="col-3"><span className="text-muted">Capacity Diff:</span> <br /><strong className={diff >= 0 ? 'text-success' : 'text-danger'}>{diff >= 0 ? `+${diff}` : diff} Mbps</strong></div>
+                          <div className="col-3"><span className="text-muted">Est. Revenue:</span> <br /><strong className={revImp >= 0 ? 'text-success' : 'text-danger'}>{revImp >= 0 ? `+৳${revImp.toLocaleString()}` : `৳${revImp.toLocaleString()}`}</strong></div>
+                          <div className="col-3"><span className="text-muted">Est. Cost:</span> <br /><strong className={costImp >= 0 ? 'text-danger' : 'text-success'}>{costImp >= 0 ? `+৳${costImp.toLocaleString()}` : `৳${costImp.toLocaleString()}`}</strong></div>
+                          <div className="col-3"><span className="text-muted">Net Profit:</span> <br /><strong className={profitImp >= 0 ? 'text-primary' : 'text-danger'}>{profitImp >= 0 ? `+৳${profitImp.toLocaleString()}` : `৳${profitImp.toLocaleString()}`}</strong></div>
                         </div>
                       </div>
                     )
@@ -1658,7 +1937,7 @@ export default function PartnerDetailsPage() {
                   <div className="col-6">
                     <label className="form-label small fw-semibold">Commission Type *</label>
                     <select className="form-select" value={commRuleForm.commission_type} onChange={(e) => setCommRuleForm({ ...commRuleForm, commission_type: e.target.value })}>
-                      {['Percentage','Fixed Amount','Per Customer','Per Activation','Per Renewal','Per Package','Revenue Based','Bandwidth Based','Custom'].map(t => (
+                      {['Percentage', 'Fixed Amount', 'Per Customer', 'Per Activation', 'Per Renewal', 'Per Package', 'Revenue Based', 'Bandwidth Based', 'Custom'].map(t => (
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
@@ -1669,9 +1948,9 @@ export default function PartnerDetailsPage() {
                   </div>
                   <div className="col-4">
                     <label className="form-label small fw-semibold">
-                      {['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(commRuleForm.commission_type) ? 'Rate (%)' : 'Fixed Amount (৳)'}
+                      {['Percentage', 'Revenue Based', 'Bandwidth Based', 'Custom'].includes(commRuleForm.commission_type) ? 'Rate (%)' : 'Fixed Amount (৳)'}
                     </label>
-                    {['Percentage','Revenue Based','Bandwidth Based','Custom'].includes(commRuleForm.commission_type)
+                    {['Percentage', 'Revenue Based', 'Bandwidth Based', 'Custom'].includes(commRuleForm.commission_type)
                       ? <input type="number" className="form-control" value={commRuleForm.rate} onChange={(e) => setCommRuleForm({ ...commRuleForm, rate: e.target.value })} placeholder="e.g. 5" />
                       : <input type="number" className="form-control" value={commRuleForm.fixed_amount} onChange={(e) => setCommRuleForm({ ...commRuleForm, fixed_amount: e.target.value })} placeholder="e.g. 500" />
                     }
@@ -1798,7 +2077,7 @@ export default function PartnerDetailsPage() {
                 <div className="mb-3">
                   <label className="form-label small fw-semibold">Payment Method</label>
                   <select className="form-select" value={commPayForm.payment_method} onChange={(e) => setCommPayForm({ ...commPayForm, payment_method: e.target.value })}>
-                    {['Bank Transfer','Cheque','Cash','Mobile Banking','Other'].map(m => (
+                    {['Bank Transfer', 'Cheque', 'Cash', 'Mobile Banking', 'Other'].map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
@@ -1917,6 +2196,113 @@ export default function PartnerDetailsPage() {
         </div>
       )}
 
+      {/* ── Support Center Modals */}
+      {activeScModal === 'branch' && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title fw-bold">Add Support Center Branch</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Center Name *</label><input className="form-control" value={scBranchForm.center_name} onChange={(e) => setScBranchForm({ ...scBranchForm, center_name: e.target.value })} required /></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Branch Type</label><select className="form-select" value={scBranchForm.branch_type} onChange={(e) => setScBranchForm({ ...scBranchForm, branch_type: e.target.value })}>{['Main Branch','Branch','Micro Center','Planned Center'].map(t => <option key={t}>{t}</option>)}</select></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Status</label><select className="form-select" value={scBranchForm.status} onChange={(e) => setScBranchForm({ ...scBranchForm, status: e.target.value })}>{['Planned','Active','Temporarily Closed','Suspended','Closed'].map(s => <option key={s}>{s}</option>)}</select></div>
+                  <div className="col-12"><label className="form-label small fw-semibold">Address</label><input className="form-control" value={scBranchForm.address} onChange={(e) => setScBranchForm({ ...scBranchForm, address: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Contact Number</label><input className="form-control" value={scBranchForm.contact_number} onChange={(e) => setScBranchForm({ ...scBranchForm, contact_number: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Email</label><input type="email" className="form-control" value={scBranchForm.email} onChange={(e) => setScBranchForm({ ...scBranchForm, email: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Working Hours</label><input className="form-control" placeholder="e.g. 9:00 AM - 5:00 PM" value={scBranchForm.working_hours} onChange={(e) => setScBranchForm({ ...scBranchForm, working_hours: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Weekly Off Day</label><input className="form-control" value={scBranchForm.weekly_off_day} onChange={(e) => setScBranchForm({ ...scBranchForm, weekly_off_day: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Opening Date</label><input type="date" className="form-control" value={scBranchForm.opening_date} onChange={(e) => setScBranchForm({ ...scBranchForm, opening_date: e.target.value })} /></div>
+                  <div className="col-md-4"><label className="form-label small fw-semibold">Service Coverage</label><input className="form-control" value={scBranchForm.service_coverage} onChange={(e) => setScBranchForm({ ...scBranchForm, service_coverage: e.target.value })} /></div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveScModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={createScBranchMutation.isPending || !scBranchForm.center_name} onClick={() => createScBranchMutation.mutate(scBranchForm)}>
+                  {createScBranchMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {createScBranchMutation.isPending ? 'Saving...' : 'Save Branch'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeScModal === 'staff' && selectedSc && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title fw-bold">Add Staff — {selectedSc.center_name}</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Staff Name *</label><input className="form-control" value={scStaffForm.staff_name} onChange={(e) => setScStaffForm({ ...scStaffForm, staff_name: e.target.value })} required /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Category</label><select className="form-select" value={scStaffForm.staff_category} onChange={(e) => setScStaffForm({ ...scStaffForm, staff_category: e.target.value })}>{['Customer Service','Engineer/Technician','Administration','Sales','Billing','Security','Other'].map(c => <option key={c}>{c}</option>)}</select></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Designation</label><input className="form-control" value={scStaffForm.designation} onChange={(e) => setScStaffForm({ ...scStaffForm, designation: e.target.value })} /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Contact Number</label><input className="form-control" value={scStaffForm.contact_number} onChange={(e) => setScStaffForm({ ...scStaffForm, contact_number: e.target.value })} /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Email</label><input type="email" className="form-control" value={scStaffForm.email} onChange={(e) => setScStaffForm({ ...scStaffForm, email: e.target.value })} /></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Joining Date</label><input type="date" className="form-control" value={scStaffForm.joining_date} onChange={(e) => setScStaffForm({ ...scStaffForm, joining_date: e.target.value })} /></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Monthly Cost (৳)</label><input type="number" className="form-control" value={scStaffForm.monthly_cost} onChange={(e) => setScStaffForm({ ...scStaffForm, monthly_cost: e.target.value })} /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Status</label><select className="form-select" value={scStaffForm.status} onChange={(e) => setScStaffForm({ ...scStaffForm, status: e.target.value })}>{['Active','On Leave','Vacant','Terminated'].map(s => <option key={s}>{s}</option>)}</select></div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveScModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addScStaffMutation.isPending || !scStaffForm.staff_name} onClick={() => addScStaffMutation.mutate({ centerId: selectedSc.id, data: scStaffForm })}>
+                  {addScStaffMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addScStaffMutation.isPending ? 'Saving...' : 'Save Staff'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeScModal === 'cost' && selectedSc && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title fw-bold">Record Operating Cost — {selectedSc.center_name}</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
+              <div className="modal-body">
+                <div className="alert alert-info py-2 small">Cost mirrors automatically to the P&L statement (BR-04).</div>
+                <div className="row g-3">
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Cost Date *</label><input type="date" className="form-control" value={scCostForm.cost_date} onChange={(e) => setScCostForm({ ...scCostForm, cost_date: e.target.value })} required /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Cost Type</label><select className="form-select" value={scCostForm.cost_type} onChange={(e) => setScCostForm({ ...scCostForm, cost_type: e.target.value })}>{['Rent','Utilities','Salary','Internet/Connectivity','Equipment Maintenance','Office Supplies','Transport','Marketing','Miscellaneous'].map(c => <option key={c}>{c}</option>)}</select></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Amount (৳) *</label><input type="number" step="0.01" className="form-control" value={scCostForm.amount} onChange={(e) => setScCostForm({ ...scCostForm, amount: e.target.value })} required /></div>
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Description</label><input className="form-control" value={scCostForm.description} onChange={(e) => setScCostForm({ ...scCostForm, description: e.target.value })} /></div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveScModal(null)}>Cancel</button>
+                <button className="btn btn-danger d-flex align-items-center gap-1" disabled={addScCostMutation.isPending || !scCostForm.amount} onClick={() => addScCostMutation.mutate({ centerId: selectedSc.id, data: scCostForm })}>
+                  {addScCostMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addScCostMutation.isPending ? 'Saving...' : 'Record Cost'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeScModal === 'equipment' && selectedSc && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title fw-bold">Add Branch Equipment — {selectedSc.center_name}</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6"><label className="form-label small fw-semibold">Equipment Type</label><select className="form-select" value={scEquipmentForm.equipment_type} onChange={(e) => setScEquipmentForm({ ...scEquipmentForm, equipment_type: e.target.value })}>{['Router','Switch','OLT','Server','Computer','Furniture','Tools','Vehicle','Other'].map(t => <option key={t}>{t}</option>)}</select></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Quantity *</label><input type="number" min="1" className="form-control" value={scEquipmentForm.quantity} onChange={(e) => setScEquipmentForm({ ...scEquipmentForm, quantity: e.target.value })} required /></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Status</label><select className="form-select" value={scEquipmentForm.status} onChange={(e) => setScEquipmentForm({ ...scEquipmentForm, status: e.target.value })}>{['Active','Under Maintenance','Retired','Damaged'].map(s => <option key={s}>{s}</option>)}</select></div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setActiveScModal(null)}>Cancel</button>
+                <button className="btn btn-primary d-flex align-items-center gap-1" disabled={addScEquipmentMutation.isPending} onClick={() => addScEquipmentMutation.mutate({ centerId: selectedSc.id, data: scEquipmentForm })}>
+                  {addScEquipmentMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
+                  {addScEquipmentMutation.isPending ? 'Saving...' : 'Save Equipment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modal for Status Change / Approval */}
       {modalState.isOpen && (
         <StatusActionModal

@@ -10,6 +10,7 @@ import AuditLogsPage from './pages/AuditLogs/AuditLogsPage'
 import Dashboard from './pages/Dashboard'
 import CommissionDashboardPage from './pages/Commission/CommissionDashboardPage'
 import BandwidthDashboardPage from './pages/Bandwidth/BandwidthDashboardPage'
+import SupportCenterDashboardPage from './pages/SupportCenter/SupportCenterDashboardPage'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
@@ -26,11 +27,6 @@ const queryClient = new QueryClient({
 })
 
 const placeholders = {
-  '/support-centers': {
-    title: 'Support Centers',
-    description: 'Branch management, staff, costs ',
-    items: ['Branches', 'Staff', 'Performance'],
-  },
   '/partner-accounts': {
     title: 'Partner Accounts',
     description: 'Consolidated financial view for Accounts role — after ',
@@ -88,6 +84,14 @@ export default function App() {
                     element={
                       <RoleRoute allow={['*']}>
                         <BandwidthDashboardPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/support-centers"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <SupportCenterDashboardPage />
                       </RoleRoute>
                     }
                   />
