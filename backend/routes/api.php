@@ -3,12 +3,16 @@
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\Commission\CommissionController;
+use App\Http\Controllers\Api\V1\Document\DocumentController;
+use App\Http\Controllers\Api\V1\Document\ProfileExportController;
 use App\Http\Controllers\Api\V1\Financial\CostController;
 use App\Http\Controllers\Api\V1\Financial\FinancialDashboardController;
 use App\Http\Controllers\Api\V1\Financial\PaymentController;
 use App\Http\Controllers\Api\V1\Financial\RevenueController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Partner\PartnerController;
+use App\Http\Controllers\Api\V1\Partner\PartnerHistoryController;
+use App\Http\Controllers\Api\V1\Partner\PartnerNoteController;
 use App\Http\Controllers\Api\V1\Partner\SupportCenterController;
 use App\Http\Controllers\Api\V1\Bandwidth\BandwidthController;
 use App\Http\Controllers\Api\V1\Equipment\EquipmentController;
@@ -35,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/',                     [PartnerController::class, 'index'])->middleware('permission:partner.view')->name('partners.index');
         Route::post('/',                    [PartnerController::class, 'store'])->middleware('permission:partner.create')->name('partners.store');
         Route::get('/{partner}',            [PartnerController::class, 'show'])->middleware('permission:partner.view')->name('partners.show');
-        Route::match(['put','patch'], '/{partner}', [PartnerController::class, 'update'])->middleware('permission:partner.update')->name('partners.update');
+        Route::match(['put', 'patch'], '/{partner}', [PartnerController::class, 'update'])->middleware('permission:partner.update')->name('partners.update');
         Route::put('/{partner}/status',     [PartnerController::class, 'changeStatus'])->middleware('permission:partner.update')->name('partners.status');
         Route::post('/{partner}/approve',   [PartnerController::class, 'approve'])->middleware('permission:partner.approve')->name('partners.approve');
         Route::delete('/{partner}',         [PartnerController::class, 'destroy'])->middleware('permission:partner.delete')->name('partners.destroy');
@@ -132,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('support-centers')->group(function () {
-        Route::match(['put','patch'], '/{center}',           [SupportCenterController::class, 'update'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/{center}',           [SupportCenterController::class, 'update'])->middleware('permission:partner.update');
         Route::put('/{center}/status',                       [SupportCenterController::class, 'changeStatus'])->middleware('permission:partner.approve');
         Route::get('/{center}/staff',                        [SupportCenterController::class, 'staff'])->middleware('permission:partner.view');
         Route::post('/{center}/staff',                       [SupportCenterController::class, 'storeStaff'])->middleware('permission:partner.update');
@@ -140,11 +144,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{center}/services',                    [SupportCenterController::class, 'storeService'])->middleware('permission:partner.update');
         Route::get('/{center}/equipment',                    [SupportCenterController::class, 'equipment'])->middleware('permission:partner.view');
         Route::post('/{center}/equipment',                   [SupportCenterController::class, 'storeEquipment'])->middleware('permission:partner.update');
-        Route::match(['put','patch'], '/{center}/equipment/{equipment}', [SupportCenterController::class, 'updateEquipment'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/{center}/equipment/{equipment}', [SupportCenterController::class, 'updateEquipment'])->middleware('permission:partner.update');
         Route::delete('/{center}/equipment/{equipment}',     [SupportCenterController::class, 'deleteEquipment'])->middleware('permission:partner.update');
         Route::get('/{center}/costs',                        [SupportCenterController::class, 'costs'])->middleware('permission:partner.view');
         Route::post('/{center}/costs',                       [SupportCenterController::class, 'storeCost'])->middleware('permission:partner.update');
-        Route::match(['put','patch'], '/{center}/costs/{cost}', [SupportCenterController::class, 'updateCost'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/{center}/costs/{cost}', [SupportCenterController::class, 'updateCost'])->middleware('permission:partner.update');
         Route::delete('/{center}/costs/{cost}',              [SupportCenterController::class, 'deleteCost'])->middleware('permission:partner.update');
         Route::get('/{center}/performance',                  [SupportCenterController::class, 'performance'])->middleware('permission:partner.view');
         Route::get('/{center}/history',                      [SupportCenterController::class, 'history'])->middleware('permission:partner.view');
@@ -152,12 +156,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- SC Staff / Service direct resource routes ---
     Route::prefix('support-center-staff')->group(function () {
-        Route::match(['put','patch'], '/{staff}', [SupportCenterController::class, 'updateStaff'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/{staff}', [SupportCenterController::class, 'updateStaff'])->middleware('permission:partner.update');
         Route::delete('/{staff}',                [SupportCenterController::class, 'deleteStaff'])->middleware('permission:partner.update');
     });
 
     Route::prefix('support-center-services')->group(function () {
-        Route::match(['put','patch'], '/{service}', [SupportCenterController::class, 'updateService'])->middleware('permission:partner.update');
+        Route::match(['put', 'patch'], '/{service}', [SupportCenterController::class, 'updateService'])->middleware('permission:partner.update');
         Route::delete('/{service}',                 [SupportCenterController::class, 'deleteService'])->middleware('permission:partner.update');
     });
 
@@ -173,7 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{partner}/sales-performance',  [MarketingController::class, 'storeSalesMetric'])->middleware('permission:partner.update');
         Route::get('/{partner}/package-performance', [MarketingController::class, 'getPackagePerformance'])->middleware('permission:partner.view');
         Route::get('/{partner}/area-metrics',        [MarketingController::class, 'getAreaMetrics'])->middleware('permission:partner.view');
-        
+
         Route::get('/{partner}/campaigns',           [MarketingController::class, 'getCampaigns'])->middleware('permission:partner.view');
         Route::post('/{partner}/campaigns',          [MarketingController::class, 'storeCampaign'])->middleware('permission:partner.update');
         Route::match(['put', 'patch'], '/campaigns/{campaign}', [MarketingController::class, 'updateCampaign'])->middleware('permission:partner.update');
@@ -185,4 +189,51 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('permission:audit-log.view')
         ->name('audit-logs.index');
 
+
+    // --- Documents
+    Route::prefix('partners/{partner}/documents')->group(function () {
+        Route::get('/',                  [DocumentController::class, 'index'])->middleware('permission:document.view')->name('documents.index');
+        Route::post('/',                 [DocumentController::class, 'store'])->middleware('permission:document.upload')->name('documents.store');
+        Route::get('/expiry-alerts',     [DocumentController::class, 'expiryAlerts'])->middleware('permission:document.view')->name('documents.expiry-alerts');
+    });
+
+    Route::prefix('documents')->group(function () {
+        Route::get('/expiry-dashboard',        [DocumentController::class, 'globalExpiryDashboard'])->middleware('permission:document.view')->name('documents.expiry-dashboard');
+        Route::get('/{document}',              [DocumentController::class, 'show'])->middleware('permission:document.view')->name('documents.show');
+        Route::match(['put', 'patch'], '/{document}', [DocumentController::class, 'update'])->middleware('permission:document.upload')->name('documents.update');
+        Route::post('/{document}/versions',    [DocumentController::class, 'addVersion'])->middleware('permission:document.upload')->name('documents.versions.store');
+        Route::get('/{document}/versions',     [DocumentController::class, 'versions'])->middleware('permission:document.view')->name('documents.versions.index');
+        Route::put('/{document}/status',       [DocumentController::class, 'changeStatus'])->middleware('permission:document.upload')->name('documents.status');
+        Route::delete('/{document}',           [DocumentController::class, 'destroy'])->middleware('permission:document.delete')->name('documents.destroy');
+    });
+
+    Route::post('/document-expiry/{alert}/acknowledge', [DocumentController::class, 'acknowledgeAlert'])
+        ->middleware('permission:document.upload')
+        ->name('documents.expiry.acknowledge');
+
+    // --- Partner History / Timeline 
+    Route::prefix('partners/{partner}/history')->group(function () {
+        Route::get('/',         [PartnerHistoryController::class, 'index'])->middleware('permission:partner.view')->name('partners.history.index');
+        Route::get('/summary',  [PartnerHistoryController::class, 'summary'])->middleware('permission:partner.view')->name('partners.history.summary');
+        Route::post('/',        [PartnerHistoryController::class, 'store'])->middleware('permission:partner.update')->name('partners.history.store');
+    });
+
+    // --- Partner Notes 
+    Route::prefix('partners/{partner}/notes')->group(function () {
+        Route::get('/',   [PartnerNoteController::class, 'index'])->middleware('permission:note.view')->name('partners.notes.index');
+        Route::post('/',  [PartnerNoteController::class, 'store'])->middleware('permission:note.create')->name('partners.notes.store');
+    });
+
+    Route::prefix('notes')->group(function () {
+        Route::match(['put', 'patch'], '/{note}', [PartnerNoteController::class, 'update'])->middleware('permission:note.update')->name('notes.update');
+        Route::put('/{note}/pin',                [PartnerNoteController::class, 'togglePin'])->middleware('permission:note.update')->name('notes.pin');
+        Route::delete('/{note}',                 [PartnerNoteController::class, 'destroy'])->middleware('permission:note.delete')->name('notes.destroy');
+    });
+
+    // --- Partner Profile Export-
+    Route::prefix('partners/{partner}/export')->group(function () {
+        Route::get('/options', [ProfileExportController::class, 'options'])->middleware('permission:report.view')->name('partners.export.options');
+        Route::get('/preview', [ProfileExportController::class, 'preview'])->middleware('permission:report.view')->name('partners.export.preview');
+        Route::get('/',        [ProfileExportController::class, 'export'])->middleware('permission:report.export')->name('partners.export.download');
+    });
 });
