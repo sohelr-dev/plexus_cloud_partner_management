@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Financial\FinancialDashboardController;
 use App\Http\Controllers\Api\V1\Financial\PaymentController;
 use App\Http\Controllers\Api\V1\Financial\RevenueController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Partner\IntelligenceController;
 use App\Http\Controllers\Api\V1\Partner\PartnerController;
 use App\Http\Controllers\Api\V1\Partner\PartnerHistoryController;
 use App\Http\Controllers\Api\V1\Partner\PartnerNoteController;
@@ -235,5 +236,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/options', [ProfileExportController::class, 'options'])->middleware('permission:report.view')->name('partners.export.options');
         Route::get('/preview', [ProfileExportController::class, 'preview'])->middleware('permission:report.view')->name('partners.export.preview');
         Route::get('/',        [ProfileExportController::class, 'export'])->middleware('permission:report.export')->name('partners.export.download');
+    });
+
+    // --- Intelligence (Health, Risk, Insights)
+    Route::prefix('partners/{partner}/intelligence')->group(function () {
+        Route::get('/dashboard',     [IntelligenceController::class, 'dashboard'])->middleware('permission:partner.view')->name('partners.intelligence.dashboard');
+        Route::post('/recalculate',  [IntelligenceController::class, 'recalculate'])->middleware('permission:partner.update')->name('partners.intelligence.recalculate');
+        Route::get('/score-history', [IntelligenceController::class, 'scoreHistory'])->middleware('permission:partner.view')->name('partners.intelligence.history');
+        Route::get('/risks',         [IntelligenceController::class, 'risks'])->middleware('permission:partner.view')->name('partners.intelligence.risks');
     });
 });
