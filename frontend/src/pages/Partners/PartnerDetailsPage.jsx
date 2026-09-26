@@ -61,6 +61,7 @@ import DocumentsTab from '../../features/partners/DocumentsTab'
 import HistoryTimelineTab from '../../features/partners/HistoryTimelineTab'
 import NotesPanel from '../../features/partners/NotesPanel'
 import ProfileExportModal from '../../features/partners/ProfileExportModal'
+import HealthRiskTab from '../../features/partners/HealthRiskTab'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
@@ -2109,7 +2110,34 @@ export default function PartnerDetailsPage() {
             </div>
           </div>
         )}
+
+        {/* TAB: Health & Risk */}
+        {activeTab === 'health_risk' && <HealthRiskTab partnerId={id} />}
+
+        {/* TAB: Audit Trail */}
+        {activeTab === 'audit' && (
+          <div className="pm-card">
+            <div className="pm-card-header">
+              <h6 className="pm-card-title mb-0">
+                <ClipboardList size={16} className="me-2" />
+                Audit Trail
+              </h6>
+            </div>
+            <div className="text-center py-5 text-muted">
+              <ClipboardList size={48} className="mb-3 opacity-25 d-block mx-auto" />
+              <p className="mb-3">Full audit log for this partner is available on the dedicated Audit Logs page.</p>
+              <a
+                href={`/audit-logs?entity_type=Partner&entity_id=${id}`}
+                className="btn btn-outline-primary btn-sm"
+              >
+                <ClipboardList size={14} className="me-1" />
+                View Audit Logs
+              </a>
+            </div>
+          </div>
+        )}
       </div>
+
 
       {/* Financial Recording Modals */}
       {activeFinModal === 'revenue' && (
