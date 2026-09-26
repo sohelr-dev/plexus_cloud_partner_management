@@ -8,6 +8,7 @@ use App\Models\Bandwidth\PartnerBandwidthHistory;
 use App\Models\Commission\CommissionPayment;
 use App\Models\Commission\CommissionRule;
 use App\Models\Commission\PartnerCommission;
+use App\Models\Document\PartnerDocument;
 use App\Models\Equipment\PartnerEndDevice;
 use App\Models\Equipment\PartnerEquipment;
 use App\Models\Financial\PartnerCost;
@@ -146,7 +147,7 @@ class Partner extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // --- Financial Relationships 
+    // --- Financial Relationships
 
     public function revenues(): HasMany
     {
@@ -219,7 +220,7 @@ class Partner extends Model
         return $this->hasMany(CommissionPayment::class);
     }
 
-    // --- Support Center Relationships 
+    // --- Support Center Relationships
 
     public function supportCenters(): HasMany
     {
@@ -251,5 +252,21 @@ class Partner extends Model
     public function areaMetrics(): HasMany
     {
         return $this->hasMany(PartnerAreaMetric::class);
+    }
+
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PartnerDocument::class);
+    }
+
+    public function timelineEvents(): HasMany
+    {
+        return $this->hasMany(PartnerTimelineEvent::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(PartnerNote::class);
     }
 }

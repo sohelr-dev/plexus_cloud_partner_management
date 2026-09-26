@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             BandwidthSeeder::class,
             EquipmentSeeder::class,
             SupportCenterSeeder::class,
+            DocumentSeeder::class,
         ]);
 
         $users = [

@@ -46,6 +46,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'support-center'    => ['view', 'create', 'update', 'delete'],
             'partner-account'   => ['view', 'create', 'update'],
             'document'          => ['view', 'upload', 'delete'],
+            'note'              => ['view', 'create', 'update', 'delete'],
+            'timeline'          => ['view', 'create'],
             'marketing'         => ['view', 'create', 'update'],
             'risk'              => ['view', 'manage'],
             'report'            => ['view', 'export'],
@@ -84,6 +86,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'revenue.view', 'cost.view',
             'support-center.view', 'partner-account.view',
             'document.view', 'marketing.view',
+            'timeline.view', 'note.view',
             'risk.view', 'report.view', 'report.export',
             'audit-log.view',
         ]));
@@ -95,6 +98,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'partner-profile.view', 'partner-profile.update',
             'bandwidth.view', 'bandwidth.create', 'bandwidth.update',
             'document.view', 'document.upload',
+            'note.view', 'note.create', 'note.update', 'note.delete',
+            'timeline.view', 'timeline.create',
             'support-center.view',
             'risk.view', 'report.view', 'report.export',
             'audit-log.view',
@@ -107,6 +112,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'partner-profile.view', 'partner-profile.update',
             'marketing.view', 'marketing.create', 'marketing.update',
             'document.view', 'document.upload',
+            'note.view', 'note.create', 'note.update',
+            'timeline.view', 'timeline.create',
             'report.view',
         ]));
 
@@ -115,6 +122,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $marketing->syncPermissions($perms([
             'partner.view',
             'marketing.view', 'marketing.create', 'marketing.update',
+            'note.view', 'note.create',
             'report.view', 'report.export',
         ]));
 
@@ -127,6 +135,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'payment.view', 'payment.create', 'payment.update', 'payment.approve',
             'commission.view', 'commission.approve', 'commission.pay',
             'partner-account.view', 'partner-account.create', 'partner-account.update',
+            'document.view', 'document.upload',
+            'note.view', 'note.create',
+            'timeline.view',
             'report.view', 'report.export',
         ]));
 
@@ -138,6 +149,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'commission.view',
             'partner-account.view', 'partner-account.create', 'partner-account.update',
             'revenue.view', 'cost.view',
+            'document.view',
+            'note.view', 'note.create',
+            'timeline.view',
             'report.view', 'report.export',
         ]));
 
@@ -148,6 +162,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'bandwidth.view', 'bandwidth.create', 'bandwidth.update', 'bandwidth.delete', 'bandwidth.approve',
             'equipment.view', 'equipment.create', 'equipment.update', 'equipment.delete',
             'device.view', 'device.create', 'device.update', 'device.delete',
+            'document.view', 'document.upload',
+            'timeline.view',
             'report.view',
         ]));
 
@@ -166,6 +182,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'partner.view', 'partner-profile.view',
             'support-center.view', 'support-center.create', 'support-center.update', 'support-center.delete',
             'equipment.view',
+            'document.view', 'document.upload',
+            'note.view', 'note.create',
+            'timeline.view',
             'report.view',
         ]));
 
