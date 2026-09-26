@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Bandwidth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RecalculateHealthScoresJob;
 use App\Models\Bandwidth\PartnerBandwidthAllocation;
 use App\Models\Bandwidth\PartnerBandwidthChange;
 use App\Models\Partner\Partner;
@@ -157,6 +158,8 @@ class BandwidthController extends Controller
             $approvedChange->toArray(),
             "Approved bandwidth change request ID #{$change->id}."
         );
+        
+        RecalculateHealthScoresJob::dispatch($change->partner);
 
         return response()->json([
             'success' => true,
