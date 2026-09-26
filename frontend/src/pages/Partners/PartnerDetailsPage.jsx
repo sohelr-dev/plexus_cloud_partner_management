@@ -25,6 +25,7 @@ import {
   UserCheck,
   PlusCircle,
   ChevronDown,
+  Download,
   Plus,
   Trash2,
   CheckCircle2,
@@ -56,6 +57,10 @@ import {
   deleteCampaign
 } from '../../api/marketing'
 import { usePermissions } from '../../context/PermissionContext'
+import DocumentsTab from '../../features/partners/DocumentsTab'
+import HistoryTimelineTab from '../../features/partners/HistoryTimelineTab'
+import NotesPanel from '../../features/partners/NotesPanel'
+import ProfileExportModal from '../../features/partners/ProfileExportModal'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
@@ -83,6 +88,7 @@ export default function PartnerDetailsPage() {
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'status_change' })
   const [activeFinModal, setActiveFinModal] = useState(null) // 'revenue' | 'cost' | 'payment'
   const [showQuickActions, setShowQuickActions] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   // Modal form states
   const [revForm, setRevForm] = useState({ revenue_source: 'Bandwidth Sales', amount: '', description: '', source_reference: '' })
@@ -127,7 +133,7 @@ export default function PartnerDetailsPage() {
     enabled: activeTab === 'financial',
   })
 
-  // 4. Fetch Marketing Module Data 
+  // 4. Fetch Marketing Module Data
   const { data: mktSummary } = useQuery({
     queryKey: ['marketingSummary', id],
     queryFn: () => fetchMarketingSummary(id),
@@ -683,6 +689,22 @@ export default function PartnerDetailsPage() {
                       </li>
                     </>
                   )}
+                  {can('report.export') && (
+                    <>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button
+                          className="dropdown-item d-flex align-items-center gap-2"
+                          onClick={() => {
+                            setShowQuickActions(false)
+                            setShowExportModal(true)
+                          }}
+                        >
+                          <Download size={15} className="text-secondary" /> Export Profile
+                        </button>
+                      </li>
+                    </>
+                  )}
                 </ul>
               )}
             </div>
@@ -691,7 +713,7 @@ export default function PartnerDetailsPage() {
 
         {/* Business Models Badges */}
         <div className="mt-3 pt-3 border-top d-flex align-items-center gap-2 flex-wrap">
-          <span className="text-muted fw-medium me-1" style={{ fontSize: '0.8rem' }}>Active Business Models (BR-01):</span>
+          <span className="text-muted fw-medium me-1" style={{ fontSize: '0.8rem' }}>Active Business Models:</span>
           {businessModels.length > 0 ? (
             businessModels.map((bm) => (
               <span key={bm.id} className="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 fs-7">
@@ -1323,7 +1345,7 @@ export default function PartnerDetailsPage() {
                 <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
                   <DollarSign size={20} /> Financial Transactions & P&L Statement
                 </h5>
-                <p className="text-muted small mb-0">Recorded revenues, operating costs, payments and calculated P&L statement (BR-06 & BR-13).</p>
+                <p className="text-muted small mb-0">Recorded revenues, operating costs, payments and calculated P&L statement .</p>
               </div>
 
               <div className="d-flex gap-2">
@@ -1568,7 +1590,7 @@ export default function PartnerDetailsPage() {
                     <th>Pre-Approval Impact Analysis </th>
                     <th>Reason</th>
                     <th>Status</th>
-                    <th>Actions (BR-08 Workflow)</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody className="fs-7">
@@ -1779,7 +1801,7 @@ export default function PartnerDetailsPage() {
                   <CreditCard size={20} className="text-primary" />
                   Commission Engine &amp; Dashboard
                 </h5>
-                <p className="text-muted small mb-0">Rules, lifecycle (Generated → Payable → Paid), BR-09</p>
+                <p className="text-muted small mb-0">Rules, lifecycle (Generated → Payable → Paid)</p>
               </div>
               <div className="d-flex gap-2">
                 <button className="btn btn-sm btn-outline-secondary" onClick={() => setActiveCommModal('addRule')}><Plus size={14} className="me-1" />Add Rule</button>
@@ -1865,7 +1887,7 @@ export default function PartnerDetailsPage() {
                 <h5 className="fw-bold mb-1 d-flex align-items-center gap-2">
                   <Store size={20} className="text-primary" /> Support Center Branches
                 </h5>
-                <p className="text-muted small mb-0">Branch profile, staff, coverage, operating costs & profit contribution (BR-02, BR-03, BR-04).</p>
+                <p className="text-muted small mb-0">Branch profile, staff, coverage, operating costs & profit contribution .</p>
               </div>
               {can('partner.update') && (
                 <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveScModal('branch')}>
@@ -2002,7 +2024,7 @@ export default function PartnerDetailsPage() {
                         </div>
 
                         {/* Operating Costs */}
-                        <h6 className="fw-bold fs-7 mb-2">Operating Costs {can('partner.update') && <button className="btn btn-xs btn-outline-danger py-0 px-2 ms-2" style={{fontSize:'0.68rem'}} onClick={() => { setSelectedSc(branch); setActiveScModal('cost') }}><Plus size={11}/> Record Cost</button>} <span className="text-muted fw-normal">(auto-mirrors to P&L — BR-04)</span></h6>
+                        <h6 className="fw-bold fs-7 mb-2">Operating Costs {can('partner.update') && <button className="btn btn-xs btn-outline-danger py-0 px-2 ms-2" style={{fontSize:'0.68rem'}} onClick={() => { setSelectedSc(branch); setActiveScModal('cost') }}><Plus size={11}/> Record Cost</button>} <span className="text-muted fw-normal">(auto-mirrors to P&L )</span></h6>
                         <div className="table-responsive mb-3">
                           <table className="table table-sm table-bordered align-middle mb-0" style={{fontSize:'0.72rem'}}>
                             <thead className="table-light"><tr><th>Date</th><th>Cost Type</th><th>Amount (৳)</th><th>Description</th>{can('partner.update') && <th></th>}</tr></thead>
@@ -2072,6 +2094,19 @@ export default function PartnerDetailsPage() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB: Documents  */}
+        {activeTab === 'documents' && <DocumentsTab partnerId={id} />}
+
+        {/* ══ TAB: History & Timeline + Notes */}
+        {activeTab === 'history' && (
+          <div className="pm-card">
+            <HistoryTimelineTab partnerId={id} />
+            <div className="px-3 pb-3">
+              <NotesPanel partnerId={id} />
+            </div>
           </div>
         )}
       </div>
@@ -2337,7 +2372,7 @@ export default function PartnerDetailsPage() {
                 <button className="btn btn-secondary" onClick={() => setActiveBwModal(null)}>Cancel</button>
                 <button className="btn btn-warning text-dark d-flex align-items-center gap-1" disabled={bwChangeReqMutation.isPending || !bwChangeForm.allocation_id || !bwChangeForm.new_mbps} onClick={() => bwChangeReqMutation.mutate(bwChangeForm)}>
                   {bwChangeReqMutation.isPending && <span className="spinner-border spinner-border-sm me-1" />}
-                  {bwChangeReqMutation.isPending ? 'Submitting Request...' : 'Submit Request for Approval (BR-08)'}
+                  {bwChangeReqMutation.isPending ? 'Submitting Request...' : 'Submit Request for Approval '}
                 </button>
               </div>
             </div>
@@ -2610,7 +2645,7 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-body">
                 <div className="alert alert-success py-2 small mb-3">
-                  <strong>BR-09 Compliant:</strong> This commission has been Approved and is Payable. Recording payment will mark it as Paid.
+                  <strong>Compliant:</strong> This commission has been Approved and is Payable. Recording payment will mark it as Paid.
                 </div>
                 <div className="mb-3">
                   <label className="form-label small fw-semibold">Payment Date *</label>
@@ -2807,7 +2842,7 @@ export default function PartnerDetailsPage() {
             <div className="modal-content">
               <div className="modal-header"><h5 className="modal-title fw-bold">Record Operating Cost — {selectedSc.center_name}</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
               <div className="modal-body">
-                <div className="alert alert-info py-2 small">Cost mirrors automatically to the P&L statement (BR-04).</div>
+                <div className="alert alert-info py-2 small">Cost mirrors automatically to the P&L statement.</div>
                 <div className="row g-3">
                   <div className="col-md-6"><label className="form-label small fw-semibold">Cost Date *</label><input type="date" className="form-control" value={scCostForm.cost_date} onChange={(e) => setScCostForm({ ...scCostForm, cost_date: e.target.value })} required /></div>
                   <div className="col-md-6"><label className="form-label small fw-semibold">Cost Type</label><select className="form-select" value={scCostForm.cost_type} onChange={(e) => setScCostForm({ ...scCostForm, cost_type: e.target.value })}>{['Rent','Utilities','Salary','Internet/Connectivity','Equipment Maintenance','Office Supplies','Transport','Marketing','Miscellaneous'].map(c => <option key={c}>{c}</option>)}</select></div>
@@ -3199,6 +3234,14 @@ export default function PartnerDetailsPage() {
             queryClient.invalidateQueries(['partner', id])
             setModalState({ ...modalState, isOpen: false })
           }}
+        />
+      )}
+
+      {showExportModal && (
+        <ProfileExportModal
+          partnerId={id}
+          partnerName={partner?.partner_name ?? 'Partner'}
+          onClose={() => setShowExportModal(false)}
         />
       )}
     </div>
