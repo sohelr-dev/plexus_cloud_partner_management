@@ -198,6 +198,11 @@ class Partner extends Model
         return $this->hasMany(PartnerEquipment::class);
     }
 
+    public function equipment(): HasMany
+    {
+        return $this->hasMany(PartnerEquipment::class);
+    }
+
     public function endDevices(): HasMany
     {
         return $this->hasMany(PartnerEndDevice::class);

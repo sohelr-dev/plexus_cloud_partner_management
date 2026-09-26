@@ -2,17 +2,15 @@
 
 namespace App\Observers;
 
+use App\Jobs\RecalculateHealthScoresJob;
 use App\Models\Partner\Partner;
 use App\Services\AuditLogService;
 
-/**
- * PartnerObserver — auto-logs every Partner model event.
- * Registered in AppServiceProvider.
- */
+
 class PartnerObserver
 {
-    /** Fields to exclude from diff (not security-relevant or too large) */
-    private const EXCLUDE = ['updated_at', 'created_at', 'deleted_at'];
+
+    private const EXCLUDE = ['updated_at', 'created_at', 'deleted_at', 'health_score', 'health_status'];
 
     public function created(Partner $partner): void
     {
@@ -43,6 +41,10 @@ class PartnerObserver
             oldValues: $old,
             newValues: $changed,
         );
+
+        if (isset($changed['status']) || isset($changed['credit_limit'])) {
+            RecalculateHealthScoresJob::dispatch($partner);
+        }
     }
 
     public function deleted(Partner $partner): void
