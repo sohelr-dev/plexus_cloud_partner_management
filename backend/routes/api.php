@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\V1\Partner\SupportCenterController;
 use App\Http\Controllers\Api\V1\Bandwidth\BandwidthController;
 use App\Http\Controllers\Api\V1\Equipment\EquipmentController;
 use App\Http\Controllers\Api\V1\Marketing\MarketingController;
+use App\Http\Controllers\Api\V1\Notification\NotificationController;
+use App\Http\Controllers\Api\V1\Report\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, '__invoke'])->name('api.health');
@@ -244,5 +246,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/recalculate',  [IntelligenceController::class, 'recalculate'])->middleware('permission:partner.update')->name('partners.intelligence.recalculate');
         Route::get('/score-history', [IntelligenceController::class, 'scoreHistory'])->middleware('permission:partner.view')->name('partners.intelligence.history');
         Route::get('/risks',         [IntelligenceController::class, 'risks'])->middleware('permission:partner.view')->name('partners.intelligence.risks');
+    });
+
+    //Notifications 
+    Route::prefix('notifications')->group(function () {
+        Route::get('/',                   [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/unread-count',       [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        Route::put('/{id}/read',          [NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::put('/mark-all-read',      [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+        Route::delete('/{id}',            [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    });
+
+    // Reports 
+    Route::prefix('reports')->group(function () {
+        Route::get('/types',              [ReportController::class, 'types'])->middleware('permission:report.view')->name('reports.types');
+        Route::get('/{type}/data',        [ReportController::class, 'data'])->middleware('permission:report.view')->name('reports.data');
+        Route::get('/{type}/export',      [ReportController::class, 'export'])->middleware('permission:report.export')->name('reports.export');
     });
 });
