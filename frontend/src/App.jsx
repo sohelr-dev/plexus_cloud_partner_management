@@ -11,6 +11,8 @@ import Dashboard from './pages/Dashboard'
 import CommissionDashboardPage from './pages/Commission/CommissionDashboardPage'
 import BandwidthDashboardPage from './pages/Bandwidth/BandwidthDashboardPage'
 import SupportCenterDashboardPage from './pages/SupportCenter/SupportCenterDashboardPage'
+import ReportsPage from './pages/Reports/ReportsPage'
+import NotificationsPage from './pages/Notifications/NotificationsPage'
 import LoginPage from './pages/Auth/LoginPage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
@@ -31,11 +33,6 @@ const placeholders = {
     title: 'Partner Accounts',
     description: 'Consolidated financial view for Accounts role — after ',
     items: ['Outstanding List', 'Commission Payable', 'Payment Entry'],
-  },
-  '/reports': {
-    title: 'Reports',
-    description: '7 report types with PDF/Excel/CSV export .',
-    items: ['Partner Report', 'Financial Report', 'Full Partner Report'],
   },
   '/settings': {
     title: 'Settings',
@@ -92,6 +89,22 @@ export default function App() {
                     element={
                       <RoleRoute allow={['*']}>
                         <SupportCenterDashboardPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <ReportsPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <NotificationsPage />
                       </RoleRoute>
                     }
                   />
