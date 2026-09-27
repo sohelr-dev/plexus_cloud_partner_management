@@ -3,16 +3,7 @@
 return [
 
     /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
-    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-    |
+    Cross-Origin Resource Sharing (CORS) Configuration
     */
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
@@ -30,11 +21,12 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Content-Disposition'],
+
 
     'max_age' => 0,
 
-    // Sanctum SPA cookie auth (Phase 2) এর জন্য true রাখা হলো
+    // Sanctum SPA cookie auth
     'supports_credentials' => true,
 
 ];
