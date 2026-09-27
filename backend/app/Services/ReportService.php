@@ -54,7 +54,7 @@ class ReportService
             $rev = PartnerRevenue::where('partner_id', $p->id)->sum('amount') ?: 0;
             $cost = PartnerCost::where('partner_id', $p->id)->sum('amount') ?: 0;
             $net = $rev - $cost;
-            $roi = PartnerRoi::where('partner_id', $p->id)->latest('calculated_at')->value('roi_percentage') ?? 0;
+            $roi = (float) (PartnerRoi::where('partner_id', $p->id)->latest('snapshot_date')->value('roi_percent') ?? 0);
             $health = $p->latestHealthScore;
 
             if ($p->status === 'Active') {

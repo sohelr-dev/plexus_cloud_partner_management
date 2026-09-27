@@ -240,8 +240,12 @@ class SupportCenterController extends ApiController
         return $this->success(null, 'Service coverage removed.');
     }
 
-    public function updateEquipment(Request $request, PartnerSupportCenterEquipment $equipment): JsonResponse
+    public function updateEquipment(Request $request, PartnerSupportCenter $center, PartnerSupportCenterEquipment $equipment): JsonResponse
     {
+        if ((int) $equipment->support_center_id !== (int) $center->id) {
+            return $this->error('Equipment asset does not belong to this Support Center.', 404);
+        }
+
         $validated = $request->validate([
             'equipment_id'   => 'nullable|integer|exists:partner_equipment,id',
             'equipment_type' => 'nullable|string|max:50',
@@ -255,15 +259,23 @@ class SupportCenterController extends ApiController
         );
     }
 
-    public function deleteEquipment(Request $request, PartnerSupportCenterEquipment $equipment): JsonResponse
+    public function deleteEquipment(PartnerSupportCenter $center, PartnerSupportCenterEquipment $equipment, Request $request): JsonResponse
     {
+        if ((int) $equipment->support_center_id !== (int) $center->id) {
+            return $this->error('Equipment asset does not belong to this Support Center.', 404);
+        }
+
         SupportCenterManagementService::deleteEquipment($equipment, $request->user());
 
         return $this->success(null, 'Branch equipment removed.');
     }
 
-    public function updateCost(Request $request, PartnerSupportCenterCost $cost): JsonResponse
+    public function updateCost(Request $request, PartnerSupportCenter $center, PartnerSupportCenterCost $cost): JsonResponse
     {
+        if ((int) $cost->support_center_id !== (int) $center->id) {
+            return $this->error('Operating cost record does not belong to this Support Center.', 404);
+        }
+
         $validated = $request->validate([
             'cost_date'   => 'nullable|date',
             'cost_type'   => 'nullable|string|in:Rent,Electricity,Internet,Staff Cost,Equipment Cost,Maintenance,Transportation,Marketing,Other',
@@ -277,8 +289,12 @@ class SupportCenterController extends ApiController
         );
     }
 
-    public function deleteCost(Request $request, PartnerSupportCenterCost $cost): JsonResponse
+    public function deleteCost(PartnerSupportCenter $center, PartnerSupportCenterCost $cost, Request $request): JsonResponse
     {
+        if ((int) $cost->support_center_id !== (int) $center->id) {
+            return $this->error('Operating cost record does not belong to this Support Center.', 404);
+        }
+
         SupportCenterManagementService::deleteCost($cost, $request->user());
 
         return $this->success(null, 'Operating cost removed (re-mirrored to partner P&L).');

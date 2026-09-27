@@ -171,7 +171,7 @@ class DocumentController extends ApiController
             $query->where('acknowledged', false);
         }
 
-        $alerts = $query->orderByRaw("FIELD(level, 'Expired', 'Critical', 'Warning', 'Info')")
+        $alerts = $query->orderByRaw("CASE level WHEN 'Expired' THEN 1 WHEN 'Critical' THEN 2 WHEN 'Warning' THEN 3 WHEN 'Info' THEN 4 ELSE 5 END")
             ->orderBy('expiry_date')
             ->limit(200)
             ->get();
