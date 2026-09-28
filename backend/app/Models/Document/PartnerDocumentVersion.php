@@ -28,9 +28,24 @@ class PartnerDocumentVersion extends Model
     protected $casts = [
         'is_current'     => 'boolean',
         'file_size'      => 'integer',
-        'effective_date' => 'date',
-        'expiry_date'    => 'date',
+        'effective_date' => 'date:Y-m-d',
+        'expiry_date'    => 'date:Y-m-d',
     ];
+
+    protected $appends = ['file_url'];
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (! $this->file_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->file_path);
+    }
 
     public function document(): BelongsTo
     {

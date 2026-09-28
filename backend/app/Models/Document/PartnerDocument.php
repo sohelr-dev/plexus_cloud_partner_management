@@ -72,13 +72,32 @@ class PartnerDocument extends Model
     ];
 
     protected $casts = [
-        'effective_date' => 'date',
-        'expiry_date'    => 'date',
+        'effective_date' => 'date:Y-m-d',
+        'expiry_date'    => 'date:Y-m-d',
         'approved_at'    => 'datetime',
         'file_size'      => 'integer',
     ];
 
-  
+    protected $appends = [
+        'days_to_expiry',
+        'is_expired',
+        'expiry_level',
+        'file_url',
+    ];
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (! $this->file_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->file_path);
+    }
+
     public function partner(): BelongsTo
     {
         return $this->belongsTo(Partner::class);

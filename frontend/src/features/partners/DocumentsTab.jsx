@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CalendarClock,
   Download,
+  ExternalLink,
   Eye,
   FileText,
   Folder,
@@ -353,7 +354,21 @@ export default function DocumentsTab({ partnerId }) {
                     <td>
                       <div className="d-flex flex-wrap gap-1">
                         {doc.file_url && (
-                          <a className="btn btn-sm btn-outline-primary py-0 px-2" style={{ fontSize: '0.68rem' }} href={doc.file_url} target="_blank" rel="noreferrer" title="Download file">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-info py-0 px-2 d-flex align-items-center gap-1"
+                            style={{ fontSize: '0.68rem' }}
+                            title="Preview document"
+                            onClick={() => {
+                              setSelectedDoc(doc)
+                              setActiveModal('preview')
+                            }}
+                          >
+                            <Eye size={12} /> View
+                          </button>
+                        )}
+                        {doc.file_url && (
+                          <a className="btn btn-sm btn-outline-primary py-0 px-2" style={{ fontSize: '0.68rem' }} href={doc.file_url} target="_blank" rel="noreferrer" title="Download file" download>
                             <Download size={12} />
                           </a>
                         )}
@@ -488,6 +503,31 @@ export default function DocumentsTab({ partnerId }) {
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
                       onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] ?? null })}
                     />
+                    {uploadForm.file && (
+                      <div className="mt-2 p-2 border rounded bg-light d-flex align-items-center gap-2">
+                        {uploadForm.file.type?.startsWith('image/') ? (
+                          <img
+                            src={URL.createObjectURL(uploadForm.file)}
+                            alt="Preview"
+                            style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <FileText size={28} className="text-primary flex-shrink-0" />
+                        )}
+                        <div className="flex-grow-1 text-truncate" style={{ fontSize: '0.78rem' }}>
+                          <div className="fw-semibold text-truncate">{uploadForm.file.name}</div>
+                          <div className="text-muted">{fmtSize(uploadForm.file.size)} · {uploadForm.file.type || 'Document'}</div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger py-0 px-2"
+                          style={{ fontSize: '0.7rem' }}
+                          onClick={() => setUploadForm({ ...uploadForm, file: null })}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="col-12">
                     <label className="form-label small fw-semibold">Remarks</label>
@@ -551,6 +591,31 @@ export default function DocumentsTab({ partnerId }) {
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
                       onChange={(e) => setVersionForm({ ...versionForm, file: e.target.files?.[0] ?? null })}
                     />
+                    {versionForm.file && (
+                      <div className="mt-2 p-2 border rounded bg-light d-flex align-items-center gap-2">
+                        {versionForm.file.type?.startsWith('image/') ? (
+                          <img
+                            src={URL.createObjectURL(versionForm.file)}
+                            alt="Preview"
+                            style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <FileText size={28} className="text-primary flex-shrink-0" />
+                        )}
+                        <div className="flex-grow-1 text-truncate" style={{ fontSize: '0.78rem' }}>
+                          <div className="fw-semibold text-truncate">{versionForm.file.name}</div>
+                          <div className="text-muted">{fmtSize(versionForm.file.size)} · {versionForm.file.type || 'Document'}</div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger py-0 px-2"
+                          style={{ fontSize: '0.7rem' }}
+                          onClick={() => setVersionForm({ ...versionForm, file: null })}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="col-12">
                     <label className="form-label small fw-semibold">Change Notes</label>
@@ -628,6 +693,105 @@ export default function DocumentsTab({ partnerId }) {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setViewVersionsOf(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ Document Preview Modal ══ */}
+      {activeModal === 'preview' && selectedDoc && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header py-2 px-3">
+                <div className="d-flex align-items-center gap-2">
+                  <FileText size={18} className="text-primary" />
+                  <div>
+                    <h6 className="modal-title fw-bold mb-0" style={{ fontSize: '0.95rem' }}>{selectedDoc.document_name}</h6>
+                    <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                      {selectedDoc.document_id} · v{selectedDoc.version} · {selectedDoc.category} ({selectedDoc.document_type})
+                    </span>
+                  </div>
+                </div>
+                <button type="button" className="btn-close" onClick={() => setActiveModal(null)} />
+              </div>
+              <div className="modal-body p-3 text-center" style={{ minHeight: '350px', backgroundColor: '#f8f9fa' }}>
+                {selectedDoc.file_url ? (
+                  selectedDoc.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(selectedDoc.file_name || selectedDoc.file_url) ? (
+                    <div className="d-flex justify-content-center align-items-center py-2">
+                      <img
+                        src={selectedDoc.file_url}
+                        alt={selectedDoc.document_name}
+                        className="img-fluid rounded border shadow-sm"
+                        style={{ maxHeight: '65vh', maxWidth: '100%', objectFit: 'contain' }}
+                      />
+                    </div>
+                  ) : selectedDoc.mime_type === 'application/pdf' || /\.pdf$/i.test(selectedDoc.file_name || selectedDoc.file_url) ? (
+                    <div style={{ height: '65vh', width: '100%' }}>
+                      <iframe
+                        src={selectedDoc.file_url}
+                        title={selectedDoc.document_name}
+                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '6px' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="py-5">
+                      <FileText size={64} className="text-primary mb-3 mx-auto" />
+                      <h6 className="fw-bold">{selectedDoc.file_name || selectedDoc.document_name}</h6>
+                      <p className="text-muted small">
+                        {selectedDoc.file_size ? `${fmtSize(selectedDoc.file_size)} · ` : ''}
+                        Preview directly in browser is not supported for this file format.
+                      </p>
+                      <a
+                        href={selectedDoc.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 mt-2"
+                        download
+                      >
+                        <Download size={14} /> Download / Open File
+                      </a>
+                    </div>
+                  )
+                ) : (
+                  <div className="py-5 text-muted">
+                    <AlertTriangle size={36} className="text-warning mb-2 mx-auto" />
+                    <div>No file attached to this document.</div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer py-2 px-3 d-flex justify-content-between">
+                <div className="d-flex gap-2 align-items-center">
+                  <span className={statusBadge(selectedDoc.status)}>{selectedDoc.status}</span>
+                  {selectedDoc.expiry_date && (
+                    <span className="badge bg-light text-dark border">
+                      Expires: {fmtDate(selectedDoc.expiry_date)}
+                    </span>
+                  )}
+                </div>
+                <div className="d-flex gap-2">
+                  {selectedDoc.file_url && (
+                    <a
+                      href={selectedDoc.file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                    >
+                      <ExternalLink size={14} /> Open in New Tab
+                    </a>
+                  )}
+                  {selectedDoc.file_url && (
+                    <a
+                      href={selectedDoc.file_url}
+                      download
+                      className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                    >
+                      <Download size={14} /> Download
+                    </a>
+                  )}
+                  <button className="btn btn-sm btn-secondary" onClick={() => setActiveModal(null)}>Close</button>
+                </div>
               </div>
             </div>
           </div>
