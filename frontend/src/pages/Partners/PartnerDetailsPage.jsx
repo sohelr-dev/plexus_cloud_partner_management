@@ -64,6 +64,7 @@ import ProfileExportModal from '../../features/partners/ProfileExportModal'
 import HealthRiskTab from '../../features/partners/HealthRiskTab'
 import BusinessInfoTab from '../../features/partners/BusinessInfoTab'
 import BusinessModelsTab from '../../features/partners/BusinessModelsTab'
+import UsersCustomersTab from '../../features/partners/UsersCustomersTab'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
@@ -73,6 +74,7 @@ const TABS = [
   { id: 'financial', label: 'Financials & P&L', icon: DollarSign },
   { id: 'bandwidth', label: 'Bandwidth', icon: Wifi },
   { id: 'devices', label: 'Equipment & Devices', icon: HardDrive },
+  { id: 'users_customers', label: 'Users & Customers', icon: Users },
   { id: 'commission', label: 'Commission', icon: CreditCard },
   { id: 'support_centers', label: 'Support Centers', icon: Store },
   { id: 'documents', label: 'Documents', icon: Folder },
@@ -924,7 +926,7 @@ export default function PartnerDetailsPage() {
                 <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
                   <TrendingUp size={20} /> Marketing Analysis & Sales Performance
                 </h5>
-                <p className="text-muted small mb-0">Customer growth, churn analysis, sales targets and campaign ROI (PRD §20-27).</p>
+                <p className="text-muted small mb-0">Customer growth, churn analysis, sales targets and campaign ROI.</p>
               </div>
 
               <div className="d-flex gap-2">
@@ -1703,6 +1705,84 @@ export default function PartnerDetailsPage() {
               </div>
             </div>
 
+            {/* Equipment Financial Impact & Warranty Health Widget */}
+            {(() => {
+              const equipments = eqData.equipments || []
+              const totalReplacementCost = equipments.reduce((acc, eq) => acc + Number(eq.purchase_cost || 0), 0)
+              const companyOwnedCost = equipments.filter(e => e.ownership === 'Company Owned').reduce((acc, eq) => acc + Number(eq.purchase_cost || 0), 0)
+              const partnerOwnedCost = equipments.filter(e => e.ownership === 'Partner Owned').reduce((acc, eq) => acc + Number(eq.purchase_cost || 0), 0)
+              const activeCustCount = eqData.total_end_devices > 0 ? eqData.total_end_devices : 1
+              const costPerCustomer = Math.round(totalReplacementCost / activeCustCount)
+
+              const now = new Date()
+              let expiring30 = 0
+              let expiring90 = 0
+              let safeWarranty = 0
+              let expired = 0
+
+              equipments.forEach(eq => {
+                if (!eq.warranty_end) return
+                const expDate = new Date(eq.warranty_end)
+                const diffDays = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24))
+                if (diffDays < 0) expired++
+                else if (diffDays <= 30) expiring30++
+                else if (diffDays <= 90) expiring90++
+                else safeWarranty++
+              })
+
+              return (
+                <div className="card border-0 shadow-sm mb-4" style={{ borderLeft: '4px solid #06b6d4' }}>
+                  <div className="card-body p-3">
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <DollarSign size={16} className="text-info" />
+                        Equipment Financial Impact &amp; Warranty Health 
+                      </h6>
+                      <span className="badge bg-info-subtle text-info fs-8">Hardware Asset Analytics</span>
+                    </div>
+
+                    <div className="row g-3">
+                      <div className="col-12 col-md-3">
+                        <div className="p-2 border rounded bg-light">
+                          <div className="text-muted fs-8">TOTAL REPLACEMENT VALUE</div>
+                          <div className="fw-bold fs-5 text-dark mt-1">৳{totalReplacementCost.toLocaleString()}</div>
+                          <div className="fs-8 text-muted mt-1">Company: ৳{companyOwnedCost.toLocaleString()} | Partner: ৳{partnerOwnedCost.toLocaleString()}</div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-3">
+                        <div className="p-2 border rounded bg-light">
+                          <div className="text-muted fs-8">EQUIPMENT COST / CUSTOMER</div>
+                          <div className="fw-bold fs-5 text-primary mt-1">৳{costPerCustomer.toLocaleString()}</div>
+                          <div className="fs-8 text-muted mt-1">Capex per endpoint terminal</div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-3">
+                        <div className="p-2 border rounded bg-light">
+                          <div className="text-muted fs-8">WARRANTY EXPIRING (&lt;90 DAYS)</div>
+                          <div className={`fw-bold fs-5 mt-1 ${expiring30 > 0 ? 'text-danger' : expiring90 > 0 ? 'text-warning-emphasis' : 'text-success'}`}>
+                            {expiring30 + expiring90} <span className="fs-7 text-muted">units</span>
+                          </div>
+                          <div className="fs-8 text-danger mt-1">
+                            {expiring30} critical (&lt;30d) | {expiring90} upcoming (30-90d)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-3">
+                        <div className="p-2 border rounded bg-light">
+                          <div className="text-muted fs-8">ACTIVE WARRANTY COVERAGE</div>
+                          <div className="fw-bold fs-5 text-success mt-1">{safeWarranty} <span className="fs-7 text-muted">units</span></div>
+                          <div className="fs-8 text-muted mt-1">{expired} units expired warranty</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Equipment Table */}
             <h6 className="fw-bold mb-2">Equipment Assets ({eqData.equipments?.length || 0})</h6>
             <div className="table-responsive mb-4">
@@ -1803,6 +1883,11 @@ export default function PartnerDetailsPage() {
               </table>
             </div>
           </div>
+        )}
+
+        {/* TAB 7: USERS & CUSTOMERS */}
+        {activeTab === 'users_customers' && (
+          <UsersCustomersTab partnerId={id} partner={partner} />
         )}
 
         {/* Commission Tab */}
@@ -3059,7 +3144,7 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-body">
                 <div className="alert alert-info py-2 small">
-                  Formulas (PRD §21): Growth % = (New / Opening) × 100 | Churn % = (Terminated / Opening Active) × 100
+                  Formulas : Growth % = (New / Opening) × 100 | Churn % = (Terminated / Opening Active) × 100
                 </div>
                 <div className="row g-3">
                   <div className="col-md-6">
@@ -3175,7 +3260,7 @@ export default function PartnerDetailsPage() {
               </div>
               <div className="modal-body">
                 <div className="alert alert-info py-2 small">
-                  Formula (PRD §22): Achievement % = (Actual Sales / Target Sales) × 100
+                  Formula : Achievement % = (Actual Sales / Target Sales) × 100
                 </div>
                 <div className="row g-3">
                   <div className="col-md-6">

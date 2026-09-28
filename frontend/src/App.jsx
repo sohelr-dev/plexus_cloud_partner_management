@@ -10,6 +10,7 @@ import AuditLogsPage from './pages/AuditLogs/AuditLogsPage'
 import Dashboard from './pages/Dashboard'
 import CommissionDashboardPage from './pages/Commission/CommissionDashboardPage'
 import BandwidthDashboardPage from './pages/Bandwidth/BandwidthDashboardPage'
+import EndDevicesPage from './pages/EndDevices/EndDevicesPage'
 import SupportCenterDashboardPage from './pages/SupportCenter/SupportCenterDashboardPage'
 import ReportsPage from './pages/Reports/ReportsPage'
 import NotificationsPage from './pages/Notifications/NotificationsPage'
@@ -73,6 +74,14 @@ export default function App() {
                     element={
                       <RoleRoute allow={['*']}>
                         <BandwidthDashboardPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/end-devices"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <EndDevicesPage />
                       </RoleRoute>
                     }
                   />

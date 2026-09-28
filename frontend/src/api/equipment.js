@@ -47,3 +47,25 @@ export const returnEquipment = async (equipmentId, returnData) => {
   const response = await api.post(`/equipment/${equipmentId}/return`, returnData);
   return response.data;
 };
+
+export const fetchGlobalEndDevices = async (params = {}) => {
+  const response = await api.get('/equipment/end-devices', { params });
+  return response.data;
+};
+
+/**
+ * Update the operational status of an end device.
+ */
+export const updateEndDeviceStatus = async (deviceId, status) => {
+  const response = await api.put(`/equipment/end-devices/${deviceId}/status`, { status });
+  return response.data;
+};
+
+/**
+ * Fetch all Network Equipment assets system-wide with filters.
+ */
+export const fetchGlobalEquipment = async (params = {}) => {
+  const response = await api.get('/equipment/assets', { params });
+  return response.data;
+};
+

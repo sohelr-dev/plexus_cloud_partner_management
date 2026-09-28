@@ -12,7 +12,6 @@ const CURRENT_YEAR = new Date().getFullYear()
 const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i)
 
 export default function Dashboard() {
-  // PRD §7 Filters
   const [partnerType,      setPartnerType]      = useState('')
   const [statusFilter,     setStatusFilter]      = useState('')
   const [areaId,           setAreaId]            = useState('')
@@ -95,7 +94,7 @@ export default function Dashboard() {
           <h1 className="pm-page-title d-flex align-items-center gap-2 mb-1">
             <LayoutDashboard size={24} className="text-primary" /> Dashboard Overview
           </h1>
-          <p className="pm-page-subtitle">Live Platform KPIs, Financial Snapshot &amp; Operations Summary — PRD §6–7</p>
+          <p className="pm-page-subtitle">Live Platform KPIs, Financial Snapshot &amp; Operations Summary</p>
         </div>
         <div className="d-flex gap-2">
           <button
@@ -111,13 +110,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* PRD §7 Universal Filter Panel */}
       {showFilters && (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
             <div className="d-flex align-items-center justify-content-between mb-3">
               <h6 className="mb-0 fw-semibold text-secondary d-flex align-items-center gap-2">
-                <Filter size={14} /> Dashboard Filters (PRD §7)
+                <Filter size={14} /> Dashboard Filters
               </h6>
               {hasFilters && (
                 <button className="btn btn-sm btn-link text-danger text-decoration-none d-flex align-items-center gap-1" onClick={resetFilters}>
@@ -281,7 +279,7 @@ export default function Dashboard() {
         <div className="d-flex flex-column gap-4">
 
           <section>
-            <div className="pm-section-title">1. Partner Directory KPIs (PRD §6.1)</div>
+            <div className="pm-section-title">1. Partner Directory KPIs </div>
             <div className="pm-kpi-grid">
               <KpiCard icon={<Users size={20} />} variant="blue"    value={partnerKpis.total      ?? 0} label="Total Partners" />
               <KpiCard icon={<Activity size={20} />} variant="green"  value={partnerKpis.active     ?? 0} label="Active Partners" />
@@ -294,7 +292,7 @@ export default function Dashboard() {
           </section>
 
           <section>
-            <div className="pm-section-title">2. Financial Overview KPIs (PRD §6.2)</div>
+            <div className="pm-section-title">2. Financial Overview KPIs</div>
             <div className="pm-kpi-grid">
               <KpiCard icon={<DollarSign size={20} />}  variant="cyan"   value={fmt(financialKpis.total_revenue)}   label="Total Partner Revenue" raw />
               <KpiCard icon={<TrendingUp size={20} />}   variant="green"  value={fmt(financialKpis.net_profit)}      label={`Net Profit (${financialKpis.profit_margin_pct ?? 0}%)`} raw />
@@ -307,7 +305,7 @@ export default function Dashboard() {
           </section>
 
           <section>
-            <div className="pm-section-title">3. Operational Status KPIs (PRD §6.3 — Live)</div>
+            <div className="pm-section-title">3. Operational Status KPIs</div>
             <div className="pm-kpi-grid">
               <KpiCard icon={<Wifi size={20} />}    variant="blue"   value={operationalKpis.formatted_bandwidth  ?? '0 Mbps'} label="Total Allocated Bandwidth" raw />
               <KpiCard icon={<Users size={20} />}   variant="green"  value={operationalKpis.total_active_customers ?? 0}      label="Total Active Customers" />
