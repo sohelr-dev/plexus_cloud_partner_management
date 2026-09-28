@@ -27,7 +27,7 @@ class PartnerCustomerMetric extends Model
     ];
 
     protected $casts = [
-        'metric_date' => 'date',
+        'metric_date' => 'date:Y-m-d',
         'growth_rate' => 'decimal:2',
         'churn_rate'  => 'decimal:2',
     ];

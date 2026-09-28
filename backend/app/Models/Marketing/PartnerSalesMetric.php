@@ -27,7 +27,7 @@ class PartnerSalesMetric extends Model
     ];
 
     protected $casts = [
-        'metric_date'                  => 'date',
+        'metric_date'                  => 'date:Y-m-d',
         'sales_target'                 => 'decimal:2',
         'actual_sales'                 => 'decimal:2',
         'achievement_percentage'       => 'decimal:2',

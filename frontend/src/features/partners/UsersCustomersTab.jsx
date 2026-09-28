@@ -329,7 +329,9 @@ export default function UsersCustomersTab({ partnerId, partner }) {
               {filteredMetrics.length > 0 ? (
                 filteredMetrics.map((row) => (
                   <tr key={row.id}>
-                    <td className="fw-semibold text-dark">{row.metric_date}</td>
+                    <td className="fw-semibold text-dark">
+                      {row.metric_date ? String(row.metric_date).split('T')[0] : '—'}
+                    </td>
                     <td>
                       <span className="badge bg-secondary-subtle text-secondary border">
                         {row.period_type}
