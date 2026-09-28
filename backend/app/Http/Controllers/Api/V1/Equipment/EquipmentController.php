@@ -13,9 +13,7 @@ use Illuminate\Http\Request;
 
 class EquipmentController extends Controller
 {
-    /**
-     * Get summary metrics and list of equipment & end devices for a partner.
-     */
+
     public function summary(Partner $partner): JsonResponse
     {
         $summary = EquipmentManagementService::getEquipmentSummary($partner);
@@ -172,6 +170,121 @@ class EquipmentController extends Controller
             'success' => true,
             'message' => 'Equipment returned successfully.',
             'data'    => $returnedEquipment,
+        ]);
+    }
+
+    /**
+     * Get global list of end devices across all partners with filters.
+     */
+    public function indexEndDevices(Request $request): JsonResponse
+    {
+        $query = PartnerEndDevice::with(['partner:id,partner_name,partner_id,partner_code'])
+            ->latest();
+
+        if ($partnerId = $request->query('partner_id')) {
+            $query->where('partner_id', $partnerId);
+        }
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+        if ($type = $request->query('device_type')) {
+            $query->where('device_type', $type);
+        }
+        if ($search = trim((string) $request->query('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('identifier', 'like', "%{$search}%")
+                  ->orWhere('device_type', 'like', "%{$search}%")
+                  ->orWhereHas('partner', function ($pq) use ($search) {
+                      $pq->where('partner_name', 'like', "%{$search}%")
+                         ->orWhere('partner_code', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $perPage = min((int) $request->query('per_page', 20), 100);
+        $paginated = $query->paginate($perPage);
+
+        // System-wide KPIs
+        $total = PartnerEndDevice::count();
+        $active = PartnerEndDevice::where('status', 'Active')->count();
+        $offline = PartnerEndDevice::where('status', 'Offline')->count();
+        $faulty = PartnerEndDevice::whereIn('status', ['Faulty', 'Suspended', 'Retired'])->count();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $paginated->items(),
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
+            'metrics' => [
+                'total'   => $total,
+                'active'  => $active,
+                'offline' => $offline,
+                'faulty'  => $faulty,
+            ],
+        ]);
+    }
+
+    /**
+     * Get global list of network equipment assets.
+     */
+    public function indexEquipment(Request $request): JsonResponse
+    {
+        $query = PartnerEquipment::with(['partner:id,partner_name,partner_id,partner_code'])
+            ->latest();
+
+        if ($partnerId = $request->query('partner_id')) {
+            $query->where('partner_id', $partnerId);
+        }
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+        if ($type = $request->query('equipment_type')) {
+            $query->where('equipment_type', $type);
+        }
+        if ($search = trim((string) $request->query('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('mac_address', 'like', "%{$search}%")
+                  ->orWhere('manufacturer', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('equipment_id', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = min((int) $request->query('per_page', 20), 100);
+        $paginated = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $paginated->items(),
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Update status of an end device.
+     */
+    public function updateEndDeviceStatus(Request $request, PartnerEndDevice $device): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:Active,Offline,Faulty,Replaced,Suspended,Retired',
+        ]);
+
+        $device->update(['status' => $validated['status']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Device status updated to {$validated['status']}.",
+            'data'    => $device,
         ]);
     }
 }

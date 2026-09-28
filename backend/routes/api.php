@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\Commission\CommissionController;
 use App\Http\Controllers\Api\V1\Document\DocumentController;
 use App\Http\Controllers\Api\V1\Document\ProfileExportController;
@@ -39,10 +40,16 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // --- Dashboard Summary 
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary'])
+        ->middleware('permission:partner.view')
+        ->name('dashboard.summary');
+
     // --- Partners ---
     Route::prefix('partners')->group(function () {
         Route::get('/lookups',              [PartnerController::class, 'lookups'])->middleware('permission:partner.view')->name('partners.lookups');
         Route::get('/',                     [PartnerController::class, 'index'])->middleware('permission:partner.view')->name('partners.index');
+        Route::post('/bulk-status',         [PartnerController::class, 'bulkStatus'])->middleware('permission:partner.update')->name('partners.bulk-status');
         Route::post('/',                    [PartnerController::class, 'store'])->middleware('permission:partner.create')->name('partners.store');
         Route::get('/{partner}',            [PartnerController::class, 'show'])->middleware('permission:partner.view')->name('partners.show');
         Route::match(['put', 'patch'], '/{partner}', [PartnerController::class, 'update'])->middleware('permission:partner.update')->name('partners.update');

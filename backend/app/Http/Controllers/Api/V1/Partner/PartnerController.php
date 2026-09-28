@@ -12,6 +12,8 @@ use App\Models\Lookup\BusinessModel;
 use App\Models\Lookup\Area;
 use App\Models\Lookup\Zone;
 use App\Models\Lookup\Territory;
+use App\Models\Partner\PartnerRelationship;
+use App\Models\Partner\PartnerRelationshipHistory;
 use App\Models\User;
 
 class PartnerController extends Controller
@@ -32,7 +34,6 @@ class PartnerController extends Controller
         $q = Partner::query()
             ->with(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager']);
 
-        // Full-text search across key identifier columns
         if ($search = trim((string) $request->query('search'))) {
             $q->where(function ($w) use ($search) {
                 $w->where('partner_name', 'like', "%{$search}%")
@@ -40,7 +41,17 @@ class PartnerController extends Controller
                     ->orWhere('partner_id', 'like', "%{$search}%")
                     ->orWhere('contact_number', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('contact_person', 'like', "%{$search}%");
+                    ->orWhere('contact_person', 'like', "%{$search}%")
+                    ->orWhereHas('endDevices', function ($d) use ($search) {
+                        $d->where('identifier', 'like', "%{$search}%")
+                          ->orWhere('customer_id', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('equipment', function ($e) use ($search) {
+                        $e->where('serial_number', 'like', "%{$search}%")
+                          ->orWhere('mac_address', 'like', "%{$search}%")
+                          ->orWhere('equipment_id', 'like', "%{$search}%")
+                          ->orWhere('asset_id', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -49,6 +60,10 @@ class PartnerController extends Controller
             if ($v = $request->query($col)) {
                 $q->where($col, $v);
             }
+        }
+
+        if ($bm = $request->query('business_model_id')) {
+            $q->whereHas('businessModels', fn($b) => $b->where('business_models.id', $bm));
         }
 
         // Sorting — only allow whitelisted columns
@@ -110,8 +125,30 @@ class PartnerController extends Controller
     public function update(Request $request, Partner $partner): PartnerResource
     {
         $data = $this->validated($request, $partner->id);
+        $oldManagerId = $partner->account_manager_id;
 
         $partner->update($data);
+
+        // Track Account Manager transfer historically 
+        if (array_key_exists('account_manager_id', $data) && $data['account_manager_id'] != $oldManagerId) {
+            PartnerRelationshipHistory::create([
+                'partner_id'          => $partner->id,
+                'previous_manager_id' => $oldManagerId,
+                'new_manager_id'      => $data['account_manager_id'],
+                'assignment_date'     => now()->toDateString(),
+                'transfer_date'       => now()->toDateString(),
+                'transfer_reason'     => $request->input('transfer_reason', 'Account Manager updated via partner edit'),
+                'created_by'          => auth()->id(),
+            ]);
+
+            PartnerRelationship::updateOrCreate(
+                ['partner_id' => $partner->id],
+                [
+                    'current_account_manager_id' => $data['account_manager_id'],
+                    'relationship_status'        => 'Active',
+                ]
+            );
+        }
 
         if ($request->has('business_model_ids')) {
             $partner->businessModels()->sync($request->input('business_model_ids', []));
@@ -125,8 +162,42 @@ class PartnerController extends Controller
         }
 
         return new PartnerResource(
-            $partner->fresh(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager'])
+            $partner->fresh(['profile', 'businessModels', 'territory', 'zone', 'area', 'accountManager', 'relationshipManager', 'relationship'])
         );
+    }
+
+    /**
+     * POST Bulk update status for multiple partners
+     */
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'partner_ids'   => ['required', 'array', 'min:1'],
+            'partner_ids.*' => ['required', 'integer', 'exists:partners,id'],
+            'status'        => ['required', 'string', 'in:Draft,Pending Approval,Under Review,Approved,Active,Suspended,Blocked,Inactive,Terminated'],
+            'reason'        => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $count = Partner::whereIn('id', $validated['partner_ids'])
+            ->update(['status' => $validated['status']]);
+
+        foreach ($validated['partner_ids'] as $pid) {
+            $p = Partner::find($pid);
+            if ($p) {
+                \App\Services\AuditLogService::log(
+                    action: 'bulk_status_changed',
+                    entity: $p,
+                    oldValues: [],
+                    newValues: ['status' => $validated['status']],
+                    reason: $validated['reason'] ?? 'Bulk status update'
+                );
+            }
+        }
+
+        return response()->json([
+            'message'       => "Successfully updated status for {$count} partners.",
+            'updated_count' => $count,
+        ]);
     }
 
     /**
