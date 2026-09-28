@@ -3,10 +3,18 @@ import { ShieldAlert } from 'lucide-react'
 import { usePermissions } from '../context/PermissionContext'
 
 
-export default function RoleRoute({ allow, fallback, children }) {
-  const { isRole } = usePermissions()
+export default function RoleRoute({ allow, permission, fallback, children }) {
+  const { isRole, can } = usePermissions()
   const location = useLocation()
 
+  // permission-based guard ( permission="setting.manage")
+  if (permission) {
+    if (can(permission)) return children ?? null
+    if (fallback) return fallback
+    return <Navigate to="/forbidden" replace state={{ from: location }} />
+  }
+
+  // role-based guard (allow={['finance', 'accounts']})
   if (!allow || isRole(allow)) {
     return children ?? null
   }

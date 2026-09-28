@@ -14,6 +14,8 @@ import SupportCenterDashboardPage from './pages/SupportCenter/SupportCenterDashb
 import ReportsPage from './pages/Reports/ReportsPage'
 import NotificationsPage from './pages/Notifications/NotificationsPage'
 import LoginPage from './pages/Auth/LoginPage'
+import SettingsPage from './pages/Settings/SettingsPage'
+import PartnerAccountsPage from './pages/PartnerAccounts/PartnerAccountsPage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -28,18 +30,8 @@ const queryClient = new QueryClient({
   },
 })
 
-const placeholders = {
-  '/partner-accounts': {
-    title: 'Partner Accounts',
-    description: 'Consolidated financial view for Accounts role — after ',
-    items: ['Outstanding List', 'Commission Payable', 'Payment Entry'],
-  },
-  '/settings': {
-    title: 'Settings',
-    description: 'Configurable options (approval, health weights, alerts) .',
-    items: ['General', 'Approval', 'Notifications'],
-  },
-}
+const placeholders = {}
+
 
 export default function App() {
   return (
@@ -105,6 +97,22 @@ export default function App() {
                     element={
                       <RoleRoute allow={['*']}>
                         <NotificationsPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/partner-accounts"
+                    element={
+                      <RoleRoute permission="payment.view">
+                        <PartnerAccountsPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <RoleRoute permission="setting.manage">
+                        <SettingsPage />
                       </RoleRoute>
                     }
                   />
