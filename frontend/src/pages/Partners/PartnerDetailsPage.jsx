@@ -62,6 +62,8 @@ import HistoryTimelineTab from '../../features/partners/HistoryTimelineTab'
 import NotesPanel from '../../features/partners/NotesPanel'
 import ProfileExportModal from '../../features/partners/ProfileExportModal'
 import HealthRiskTab from '../../features/partners/HealthRiskTab'
+import BusinessInfoTab from '../../features/partners/BusinessInfoTab'
+import BusinessModelsTab from '../../features/partners/BusinessModelsTab'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Activity },
@@ -903,7 +905,17 @@ export default function PartnerDetailsPage() {
           </div>
         )}
 
-        {/* TAB 3: MARKETING */}
+        {/* TAB 2: BUSINESS INFO */}
+        {activeTab === 'business' && partner && (
+          <BusinessInfoTab partner={partner} />
+        )}
+
+        {/* TAB 3: BUSINESS MODELS */}
+        {activeTab === 'models' && partner && (
+          <BusinessModelsTab partner={partner} onTabChange={setActiveTab} />
+        )}
+
+        {/* TAB 4: MARKETING */}
         {activeTab === 'marketing' && (
           <div>
             {/* Header with Title and Global Action Buttons */}
