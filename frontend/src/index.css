@@ -675,7 +675,21 @@ a:hover { color: var(--brand-700); }
 .pm-kpi--amber .pm-kpi-icon { background: var(--warning-light); color: var(--warning); }
 .pm-kpi--red   .pm-kpi-icon { background: var(--danger-light);  color: var(--danger); }
 .pm-kpi--cyan  .pm-kpi-icon { background: var(--info-light);    color: var(--info); }
-.pm-kpi--violet .pm-kpi-icon { background: #f5f3ff; color: var(--accent-600); }
+.pm-kpi--violet    .pm-kpi-icon { background: #f5f3ff;           color: var(--accent-600); }
+.pm-kpi--secondary .pm-kpi-icon { background: var(--gray-100);   color: var(--gray-500); }
+.pm-kpi--dark      .pm-kpi-icon { background: var(--gray-800);   color: var(--gray-200); }
+
+/* Sortable table header */
+.pm-th-sortable:hover {
+  background: var(--brand-50) !important;
+  color: var(--brand-700) !important;
+  cursor: pointer;
+}
+
+/* Refresh spin animation */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin-icon { animation: spin 0.8s linear infinite; }
+
 
 .pm-kpi-label {
   font-size: 0.73rem;
@@ -707,9 +721,7 @@ a:hover { color: var(--brand-700); }
 .pm-kpi-delta.up   { background: var(--success-light); color: var(--success); }
 .pm-kpi-delta.down { background: var(--danger-light); color: var(--danger); }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   11. STAT CARD (Partners page)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 .pm-stat-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -819,9 +831,9 @@ a:hover { color: var(--brand-700); }
   flex-wrap: wrap;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* 
    13. BADGES
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+ */
 .pm-badge {
   display: inline-flex;
   align-items: center;
