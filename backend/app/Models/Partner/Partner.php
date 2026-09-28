@@ -16,6 +16,9 @@ use App\Models\Financial\PartnerPayment;
 use App\Models\Financial\PartnerProfitLoss;
 use App\Models\Financial\PartnerRevenue;
 use App\Models\Financial\PartnerRoi;
+use App\Models\Financial\PartnerFinancialSnapshot;
+use App\Models\Partner\PartnerRelationship;
+use App\Models\Partner\PartnerRelationshipHistory;
 use App\Models\Lookup\Area;
 use App\Models\Lookup\BusinessModel;
 use App\Models\Lookup\Territory;
@@ -273,5 +276,20 @@ class Partner extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(PartnerNote::class);
+    }
+
+    public function relationship(): HasOne
+    {
+        return $this->hasOne(PartnerRelationship::class);
+    }
+
+    public function relationshipHistories(): HasMany
+    {
+        return $this->hasMany(PartnerRelationshipHistory::class);
+    }
+
+    public function financialSnapshots(): HasMany
+    {
+        return $this->hasMany(PartnerFinancialSnapshot::class);
     }
 }
