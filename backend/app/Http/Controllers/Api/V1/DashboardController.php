@@ -121,9 +121,19 @@ class DashboardController extends Controller
             ->whereIn('status', ['Active', 'Installed', 'Assigned'])
             ->count();
 
-        // Active Customers
+        // Active Customers latest closing_customers for each partner)
         $totalActiveCustomers = (int) PartnerCustomerMetric::whereIn('partner_id', $filteredPartnerIds)
-            ->sum('active_customers');
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')
+                    ->from('partner_customer_metrics')
+                    ->groupBy('partner_id');
+            })
+            ->sum('closing_customers');
+
+        // Fallback to active end devices if no periodic customer snapshot exists yet
+        if ($totalActiveCustomers === 0 && $activeEndDevices > 0) {
+            $totalActiveCustomers = $activeEndDevices;
+        }
 
         return response()->json([
             'partner_kpis' => [

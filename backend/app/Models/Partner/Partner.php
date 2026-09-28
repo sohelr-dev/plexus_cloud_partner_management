@@ -292,4 +292,14 @@ class Partner extends Model
     {
         return $this->hasMany(PartnerFinancialSnapshot::class);
     }
+
+    public function healthScores(): HasMany
+    {
+        return $this->hasMany(\App\Models\Intelligence\PartnerHealthScore::class);
+    }
+
+    public function latestHealthScore(): HasOne
+    {
+        return $this->hasOne(\App\Models\Intelligence\PartnerHealthScore::class)->latestOfMany();
+    }
 }

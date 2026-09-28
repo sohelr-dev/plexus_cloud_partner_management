@@ -106,6 +106,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Equipment & End Devices Module ---
     Route::prefix('equipment')->group(function () {
+        Route::get('/end-devices', [EquipmentController::class, 'indexEndDevices'])
+            ->middleware('permission:device.view|partner.view');
+        Route::get('/assets', [EquipmentController::class, 'indexEquipment'])
+            ->middleware('permission:equipment.view|partner.view');
+        Route::put('/end-devices/{device}/status', [EquipmentController::class, 'updateEndDeviceStatus'])
+            ->middleware('permission:device.update|partner.update');
         Route::get('/summary/{partner}', [EquipmentController::class, 'summary'])
             ->middleware('permission:equipment.view|partner.view');
         Route::post('/assets/{partner}', [EquipmentController::class, 'storeEquipment'])

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Bandwidth\PartnerBandwidthAllocation;
+use App\Models\Commission\PartnerCommission;
 use App\Models\Equipment\PartnerEquipment;
 use App\Models\Financial\PartnerCost;
 use App\Models\Financial\PartnerPayment;
@@ -10,10 +12,8 @@ use App\Models\Financial\PartnerRevenue;
 use App\Models\Financial\PartnerRoi;
 use App\Models\Marketing\PartnerCampaign;
 use App\Models\Marketing\PartnerCustomerMetric;
-use App\Models\Network\PartnerBandwidthAllocation;
 use App\Models\Partner\Partner;
-use App\Models\Partner\PartnerCommission;
-use App\Models\Partner\PartnerSupportCenter;
+use App\Models\SupportCenter\PartnerSupportCenter;
 use Illuminate\Support\Carbon;
 
 class ReportService
@@ -120,13 +120,13 @@ class ReportService
             $payQuery->where('partner_id', $filters['partner_id']);
         }
         if ($from) {
-            $revQuery->where('transaction_date', '>=', $from);
-            $costQuery->where('transaction_date', '>=', $from);
+            $revQuery->where('revenue_date', '>=', $from);
+            $costQuery->where('cost_date', '>=', $from);
             $payQuery->where('payment_date', '>=', $from);
         }
         if ($to) {
-            $revQuery->where('transaction_date', '<=', $to);
-            $costQuery->where('transaction_date', '<=', $to);
+            $revQuery->where('revenue_date', '<=', $to);
+            $costQuery->where('cost_date', '<=', $to);
             $payQuery->where('payment_date', '<=', $to);
         }
 
@@ -218,25 +218,25 @@ class ReportService
 
         $rows = [];
         foreach ($metrics as $m) {
+            $churnCustomers = (int) ($m->churn_customers ?? $m->churned_customers ?? 0);
             $growth = $m->opening_customers > 0 
-                ? round((($m->new_customers - $m->churned_customers) / $m->opening_customers) * 100, 2)
+                ? round((($m->new_customers - $churnCustomers) / $m->opening_customers) * 100, 2)
                 : 0;
             $churnRate = $m->opening_customers > 0 
-                ? round(($m->churned_customers / $m->opening_customers) * 100, 2)
+                ? round(($churnCustomers / $m->opening_customers) * 100, 2)
                 : 0;
 
             $rows[] = [
                 'partner_id'        => $m->partner?->partner_id ?? "PT-{$m->partner_id}",
                 'partner_name'      => $m->partner?->partner_name ?? 'Unknown',
                 'month_year'        => Carbon::parse($m->metric_date)->format('M Y'),
-                'active_customers'  => (int) $m->active_customers,
+                'active_customers'  => (int) ($m->closing_customers ?? $m->opening_customers ?? 0),
                 'new_customers'     => (int) $m->new_customers,
-                'churned_customers' => (int) $m->churned_customers,
+                'churned_customers' => $churnCustomers,
                 'net_growth_pct'    => (float) $growth,
                 'churn_rate_pct'    => (float) $churnRate,
             ];
         }
-
         $totalActive = collect($rows)->sum('active_customers');
         $totalNew = collect($rows)->sum('new_customers');
         $totalChurn = collect($rows)->sum('churned_customers');
@@ -282,8 +282,8 @@ class ReportService
 
         foreach ($allocations as $a) {
             $allocated = (float) $a->allocated_mbps;
-            $usage = (float) ($a->actual_usage_mbps ?? ($allocated * 0.75)); // fallback realistic usage
-            $utilization = $allocated > 0 ? round(($usage / $allocated) * 100, 1) : 0;
+            $usage = (float) ($a->used_mbps ?? ($allocated * 0.75));
+            $utilization = (float) ($a->utilization_percent ?? ($allocated > 0 ? round(($usage / $allocated) * 100, 1) : 0));
 
             $totalAllocated += $allocated;
             $totalUsage += $usage;
@@ -291,12 +291,12 @@ class ReportService
             $rows[] = [
                 'partner_id'     => $a->partner?->partner_id ?? "PT-{$a->partner_id}",
                 'partner_name'   => $a->partner?->partner_name ?? 'Unknown',
-                'service_type'   => $a->service_type ?? 'Internet Bandwidth',
+                'service_type'   => $a->service ?? 'Internet Bandwidth',
                 'allocated_mbps' => $allocated,
                 'usage_mbps'     => $usage,
                 'utilization'    => $utilization,
-                'unit_price'     => (float) $a->unit_price,
-                'total_cost'     => (float) $a->total_cost,
+                'unit_price'     => (float) ($a->price ?? 0),
+                'total_cost'     => (float) ($a->cost ?? 0),
                 'status'         => $a->status,
             ];
         }
@@ -347,11 +347,11 @@ class ReportService
             $totalCost += (float) ($e->purchase_cost ?? 0);
 
             $rows[] = [
-                'equipment_tag' => $e->equipment_code ?? $e->serial_number ?? "EQ-{$e->id}",
+                'equipment_tag' => $e->equipment_id ?? $e->asset_id ?? $e->serial_number ?? "EQ-{$e->id}",
                 'partner_id'    => $e->partner?->partner_id ?? ($e->partner_id ? "PT-{$e->partner_id}" : 'Unassigned'),
                 'partner_name'  => $e->partner?->partner_name ?? 'In Warehouse',
-                'name'          => $e->name ?? $e->model ?? 'Network Gear',
-                'category'      => $e->category ?? 'Router/Switch',
+                'name'          => $e->model ?? $e->equipment_type ?? 'Network Gear',
+                'category'      => $e->equipment_type ?? 'Router/Switch',
                 'ownership'     => $e->ownership ?? 'Company Owned',
                 'status'        => $e->status,
                 'warranty_end'  => $e->warranty_end ? Carbon::parse($e->warranty_end)->format('d M Y') : 'N/A',
@@ -412,15 +412,21 @@ class ReportService
                 $totalPending += $amt;
             }
 
+            $periodLabel = ($c->period_month && $c->period_year)
+                ? "{$c->period_month}/{$c->period_year}"
+                : ($c->period ?? 'Monthly');
+            $baseRev = (float) ($c->source_amount ?? $c->base_revenue ?? 0);
+            $rate = $baseRev > 0 ? round(($amt / $baseRev) * 100, 1) : (float) ($c->rate ?? 0);
+
             $rows[] = [
                 'partner_id'    => $c->partner?->partner_id ?? "PT-{$c->partner_id}",
                 'partner_name'  => $c->partner?->partner_name ?? 'Unknown',
-                'period'        => $c->period ?? 'Monthly',
-                'base_revenue'  => (float) $c->base_revenue,
-                'rate'          => (float) $c->rate,
+                'period'        => $periodLabel,
+                'base_revenue'  => $baseRev,
+                'rate'          => $rate,
                 'commission'    => $amt,
                 'status'        => $c->status,
-                'calculated_at' => $c->calculated_at ? Carbon::parse($c->calculated_at)->format('d M Y') : 'N/A',
+                'calculated_at' => $c->generated_at ? Carbon::parse($c->generated_at)->format('d M Y') : ($c->calculated_at ? Carbon::parse($c->calculated_at)->format('d M Y') : 'N/A'),
             ];
         }
 
@@ -468,15 +474,15 @@ class ReportService
             $totalCost += $cost;
 
             $rows[] = [
-                'branch_code'      => $b->branch_code ?? "SC-{$b->id}",
-                'branch_name'      => $b->branch_name ?? $b->name,
+                'branch_code'      => $b->branch_code ?? $b->sc_id ?? "SC-{$b->id}",
+                'branch_name'      => $b->center_name ?? $b->branch_name ?? 'Support Center',
                 'partner_id'       => $b->partner?->partner_id ?? "PT-{$b->partner_id}",
                 'partner_name'     => $b->partner?->partner_name ?? 'Unknown',
                 'branch_type'      => $b->branch_type ?? 'Full Service Branch',
                 'status'           => $b->status,
                 'staff_count'      => $staff,
                 'monthly_cost'     => $cost,
-                'coverage_area'    => $b->coverage_area ?? 'Local Zone',
+                'coverage_area'    => $b->service_coverage ?? $b->coverage_area ?? 'Local Zone',
             ];
         }
 
