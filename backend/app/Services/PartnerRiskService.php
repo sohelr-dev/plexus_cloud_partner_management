@@ -276,10 +276,12 @@ class PartnerRiskService
             }
         }
 
+        $warrantyAlertDays = (int) \App\Models\Setting::get('equipment_warranty_alert_days', 30);
+
         $expiringWarranty = $partner->equipment()
             ->whereNotNull('warranty_end')
             ->where('warranty_end', '>=', Carbon::now())
-            ->where('warranty_end', '<=', Carbon::now()->addDays(30))
+            ->where('warranty_end', '<=', Carbon::now()->addDays($warrantyAlertDays))
             ->count();
 
         if ($expiringWarranty > 0) {
@@ -287,9 +289,9 @@ class PartnerRiskService
                 'risk_category' => 'Equipment',
                 'risk_type'     => 'warranty_expiry',
                 'severity'      => 'Medium',
-                'title'         => "{$expiringWarranty} equipment warranty expiring within 30 days",
+                'title'         => "{$expiringWarranty} equipment warranty expiring within {$warrantyAlertDays} days",
                 'description'   => "Equipment warranty nearing expiry. Renewal or replacement planning required.",
-                'trigger_data'  => ['count' => $expiringWarranty],
+                'trigger_data'  => ['count' => $expiringWarranty, 'alert_days' => $warrantyAlertDays],
             ];
         }
 
@@ -349,10 +351,17 @@ class PartnerRiskService
     {
         $risks = [];
 
+        $configuredAlertDays = \App\Models\Setting::get('document_expiry_alert_days', [90, 60, 30, 15, 7, 0]);
+        if (! is_array($configuredAlertDays)) {
+            $configuredAlertDays = json_decode($configuredAlertDays, true) ?? [90, 60, 30, 15, 7, 0];
+        }
+        $maxAlertWindow = max(array_filter(array_map('intval', $configuredAlertDays), fn($d) => $d > 0));
+        $criticalThreshold = (int) \App\Models\Setting::get('health_threshold_critical', 30);
+
         $expiringDocs = $partner->documents()
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '>=', Carbon::now())
-            ->where('expiry_date', '<=', Carbon::now()->addDays(90))
+            ->where('expiry_date', '<=', Carbon::now()->addDays($maxAlertWindow))
             ->where('status', 'Active')
             ->get(['id', 'document_name', 'expiry_date', 'document_type']);
 
@@ -361,7 +370,7 @@ class PartnerRiskService
             $risks[]  = [
                 'risk_category' => 'Contract',
                 'risk_type'     => 'document_expiry',
-                'severity'      => $daysLeft <= 30 ? 'High' : 'Medium',
+                'severity'      => $daysLeft <= $criticalThreshold ? 'High' : 'Medium',
                 'title'         => "Document expiring in {$daysLeft} days: {$doc->document_name}",
                 'description'   => "{$doc->document_type} '{$doc->document_name}' expires on "
                     . Carbon::parse($doc->expiry_date)->format('d M Y') . ".",

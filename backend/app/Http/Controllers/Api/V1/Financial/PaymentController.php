@@ -50,16 +50,20 @@ class PaymentController extends Controller
             'remarks'          => ['nullable', 'string'],
         ]);
 
+        // Validate partner status
+        $partner = Partner::findOrFail($validated['partner_id']);
+        if (in_array($partner->status, ['Draft', 'Pending Approval', 'Rejected'])) {
+            return response()->json(['message' => 'Financial transactions are not allowed for this partner status.'], 403);
+        }
+
         $validated['created_by'] = $request->user()?->id;
         $validated['status']     = $validated['status'] ?? 'Completed';
 
         $payment = PartnerPayment::create($validated);
 
         // Recalculate P&L for partner
-        $partner = Partner::find($validated['partner_id']);
-        if ($partner) {
-            FinancialCalculationService::calculatePnL($partner);
-        }
+        FinancialCalculationService::calculatePnL($partner);
+
 
         AuditLogService::log(
             action: 'created',

@@ -71,6 +71,12 @@ class PartnerController extends Controller
     {
         $data = $this->validated($request);
 
+        // Check if partner approval is enabled in settings
+        $approvalEnabled = (bool) \App\Models\Setting::get('partner_approval_enabled', true);
+        if (empty($data['status'])) {
+            $data['status'] = $approvalEnabled ? 'Draft' : 'Active';
+        }
+
         $partner = Partner::create($data);
 
         // Sync Business Models if provided 

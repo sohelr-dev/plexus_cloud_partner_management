@@ -24,6 +24,13 @@ class NotificationService
 
     public static function notifyPartnerEvent(string $title, string $message, ?int $partnerId = null, string $severity = 'info'): void
     {
+        $isApproval = str_contains(strtolower($title), 'approval') || str_contains(strtolower($title), 'approved') || str_contains(strtolower($title), 'rejected');
+        $settingKey = $isApproval ? 'notify_partner_approval' : 'notify_contract_expiry';
+        
+        if (! (bool) \App\Models\Setting::get($settingKey, true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Partner',
             title: $title,
@@ -38,6 +45,13 @@ class NotificationService
 
     public static function notifyFinancialAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'warning'): void
     {
+        $isOverdue = str_contains(strtolower($title), 'overdue');
+        $settingKey = $isOverdue ? 'notify_payment_overdue' : 'notify_credit_limit_exceeded';
+
+        if (! (bool) \App\Models\Setting::get($settingKey, true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Finance',
             title: $title,
@@ -52,6 +66,10 @@ class NotificationService
 
     public static function notifyBandwidthAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'info'): void
     {
+        if (! (bool) \App\Models\Setting::get('notify_bandwidth_high_utilization', true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Bandwidth',
             title: $title,
@@ -66,6 +84,10 @@ class NotificationService
 
     public static function notifyEquipmentAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'warning'): void
     {
+        if (! (bool) \App\Models\Setting::get('notify_equipment_warranty_expiry', true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Equipment',
             title: $title,
@@ -80,6 +102,10 @@ class NotificationService
 
     public static function notifyCommissionAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'info'): void
     {
+        if (! (bool) \App\Models\Setting::get('notify_commission_pending_approval', true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Commission',
             title: $title,
@@ -94,6 +120,10 @@ class NotificationService
 
     public static function notifyHealthRiskAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'danger'): void
     {
+        if (! (bool) \App\Models\Setting::get('notify_health_score_declined', true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Health',
             title: $title,
@@ -106,9 +136,12 @@ class NotificationService
         self::notifyRoles(['management', 'partner-manager'], $notification);
     }
 
-
     public static function notifyDocumentAlert(string $title, string $message, ?int $partnerId = null, string $severity = 'warning'): void
     {
+        if (! (bool) \App\Models\Setting::get('notify_document_expiry', true)) {
+            return;
+        }
+
         $notification = new SystemAlertNotification(
             category: 'Documents',
             title: $title,

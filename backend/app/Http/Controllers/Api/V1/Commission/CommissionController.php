@@ -126,18 +126,27 @@ class CommissionController extends ApiController
 
     public function storeRule(Request $request, Partner $partner): JsonResponse
     {
+        $maxRate     = (float) \App\Models\Setting::get('commission_max_rate_percent', 30);
+        $defaultRate = (float) \App\Models\Setting::get('commission_default_rate_percent', 10);
+
         $data = $request->validate([
             'rule_name'      => 'required|string|max:255',
             'service'        => 'nullable|string|max:100',
             'commission_type'=> 'required|string|in:' . implode(',', \App\Models\Commission\CommissionRule::TYPES),
-            'rate'           => 'nullable|numeric|min:0|max:100',
+            'rate'           => "nullable|numeric|min:0|max:{$maxRate}",
             'fixed_amount'   => 'nullable|numeric|min:0',
             'target'         => 'nullable|numeric|min:0',
             'maximum_limit'  => 'nullable|numeric|min:0',
             'effective_date' => 'nullable|date',
             'expiry_date'    => 'nullable|date',
             'status'         => 'nullable|string|in:Active,Inactive,Expired',
+        ], [
+            'rate.max' => "Commission rate cannot exceed maximum allowed rate of {$maxRate}% (configured in System Settings).",
         ]);
+
+        if (empty($data['rate']) && empty($data['fixed_amount']) && ($data['commission_type'] ?? '') === 'Percentage') {
+            $data['rate'] = $defaultRate;
+        }
 
         try {
             $rule = CommissionService::createRule($partner, $data);
@@ -149,17 +158,21 @@ class CommissionController extends ApiController
 
     public function updateRule(Request $request, CommissionRule $rule): JsonResponse
     {
+        $maxRate = (float) \App\Models\Setting::get('commission_max_rate_percent', 30);
+
         $data = $request->validate([
             'rule_name'      => 'sometimes|string|max:255',
             'service'        => 'nullable|string|max:100',
             'commission_type'=> 'sometimes|string|in:' . implode(',', \App\Models\Commission\CommissionRule::TYPES),
-            'rate'           => 'nullable|numeric|min:0|max:100',
+            'rate'           => "nullable|numeric|min:0|max:{$maxRate}",
             'fixed_amount'   => 'nullable|numeric|min:0',
             'target'         => 'nullable|numeric|min:0',
             'maximum_limit'  => 'nullable|numeric|min:0',
             'effective_date' => 'nullable|date',
             'expiry_date'    => 'nullable|date',
             'status'         => 'nullable|string|in:Active,Inactive,Expired',
+        ], [
+            'rate.max' => "Commission rate cannot exceed maximum allowed rate of {$maxRate}% (configured in System Settings).",
         ]);
 
         try {

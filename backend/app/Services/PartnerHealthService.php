@@ -39,14 +39,22 @@ class PartnerHealthService
 
         $operationalScore = self::operationalScore($partner, $data);
 
+        $wFinancial   = ((float) \App\Models\Setting::get('health_weight_financial', 25)) / 100;
+        $wRevenue     = ((float) \App\Models\Setting::get('health_weight_revenue_growth', 20)) / 100;
+        $wProfit      = ((float) \App\Models\Setting::get('health_weight_profitability', 20)) / 100;
+        $wPayment     = ((float) \App\Models\Setting::get('health_weight_payment_behavior', 10)) / 100;
+        $wBandwidth   = ((float) \App\Models\Setting::get('health_weight_bandwidth_growth', 10)) / 100;
+        $wCustomer    = ((float) \App\Models\Setting::get('health_weight_customer_growth', 10)) / 100;
+        $wOperational = ((float) \App\Models\Setting::get('health_weight_operational', 5)) / 100;
+
         $total = round(
-            ($financialScore  * 0.25) +
-            ($revenueScore    * 0.20) +
-            ($profitScore     * 0.20) +
-            ($paymentScore    * 0.10) +
-            ($bandwidthScore  * 0.10) +
-            ($customerScore   * 0.10) +
-            ($operationalScore * 0.05),
+            ($financialScore  * $wFinancial) +
+            ($revenueScore    * $wRevenue) +
+            ($profitScore     * $wProfit) +
+            ($paymentScore    * $wPayment) +
+            ($bandwidthScore  * $wBandwidth) +
+            ($customerScore   * $wCustomer) +
+            ($operationalScore * $wOperational),
             2
         );
 

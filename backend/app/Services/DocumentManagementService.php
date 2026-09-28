@@ -350,9 +350,13 @@ class DocumentManagementService
         }
 
         $expiry = Carbon::parse($document->expiry_date)->startOfDay();
-        $created = 0;
+        $configuredDays = \App\Models\Setting::get('document_expiry_alert_days', self::ALERT_DAYS);
+        if (! is_array($configuredDays)) {
+            $configuredDays = json_decode($configuredDays, true) ?? self::ALERT_DAYS;
+        }
 
-        foreach (self::ALERT_DAYS as $days) {
+        foreach ($configuredDays as $days) {
+            $days = (int) $days;
             $alertDate = $expiry->copy()->subDays($days);
 
             PartnerDocumentExpiry::updateOrCreate(

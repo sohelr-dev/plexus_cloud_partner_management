@@ -61,10 +61,15 @@ class PartnerHealthScore extends Model
 
     public static function statusFor(float $score): string
     {
-        if ($score >= 90) return 'Excellent';
-        if ($score >= 75) return 'Healthy';
-        if ($score >= 60) return 'Watch';
-        if ($score >= 40) return 'Risk';
+        $excellent = (float) \App\Models\Setting::get('health_threshold_excellent', 90);
+        $healthy   = (float) \App\Models\Setting::get('health_threshold_healthy', 75);
+        $watch     = (float) \App\Models\Setting::get('health_threshold_watch', 60);
+        $risk      = (float) \App\Models\Setting::get('health_threshold_risk', 40);
+
+        if ($score >= $excellent) return 'Excellent';
+        if ($score >= $healthy) return 'Healthy';
+        if ($score >= $watch) return 'Watch';
+        if ($score >= $risk) return 'Risk';
         return 'Critical';
     }
 

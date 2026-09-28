@@ -96,10 +96,16 @@ class BandwidthController extends Controller
      */
     public function requestChange(Request $request, Partner $partner): JsonResponse
     {
+        $configuredTypes = \App\Models\Setting::get('bandwidth_change_types', ['Upgrade', 'Downgrade', 'Temporary Upgrade', 'Suspension', 'Restoration']);
+        if (! is_array($configuredTypes)) {
+            $configuredTypes = json_decode($configuredTypes, true) ?? ['Upgrade', 'Downgrade', 'Temporary Upgrade', 'Suspension', 'Restoration'];
+        }
+        $allowedTypes = array_unique(array_merge(['Upgrade', 'Downgrade', 'Temporary', 'Emergency', 'Administrative'], $configuredTypes));
+
         $validated = $request->validate([
             'allocation_id'       => 'required|exists:partner_bandwidth_allocations,id',
             'new_mbps'            => 'required|numeric|min:0',
-            'change_type'         => 'nullable|string|in:Upgrade,Downgrade,Temporary,Emergency,Administrative',
+            'change_type'         => 'nullable|string|in:' . implode(',', $allowedTypes),
             'reason'              => 'nullable|string|max:1000',
             'effective_date'      => 'nullable|date',
             'unit_price'          => 'nullable|numeric|min:0',
