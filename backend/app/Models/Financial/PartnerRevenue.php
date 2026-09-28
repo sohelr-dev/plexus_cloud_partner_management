@@ -38,7 +38,7 @@ class PartnerRevenue extends Model
     ];
 
     protected $casts = [
-        'revenue_date' => 'date',
+        'revenue_date' => 'date:Y-m-d',
         'amount'       => 'decimal:2',
     ];
 

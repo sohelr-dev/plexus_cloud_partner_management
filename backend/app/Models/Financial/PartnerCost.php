@@ -38,7 +38,7 @@ class PartnerCost extends Model
     ];
 
     protected $casts = [
-        'cost_date' => 'date',
+        'cost_date' => 'date:Y-m-d',
         'amount'    => 'decimal:2',
     ];
 

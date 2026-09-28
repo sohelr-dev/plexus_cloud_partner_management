@@ -355,6 +355,8 @@ class DocumentManagementService
             $configuredDays = json_decode($configuredDays, true) ?? self::ALERT_DAYS;
         }
 
+        $created = 0;
+
         foreach ($configuredDays as $days) {
             $days = (int) $days;
             $alertDate = $expiry->copy()->subDays($days);
