@@ -20,6 +20,9 @@ use App\Http\Controllers\Api\V1\Equipment\EquipmentController;
 use App\Http\Controllers\Api\V1\Marketing\MarketingController;
 use App\Http\Controllers\Api\V1\Notification\NotificationController;
 use App\Http\Controllers\Api\V1\Report\ReportController;
+use App\Http\Controllers\Api\V1\SettingController;
+use App\Http\Controllers\Api\V1\RolePermissionController;
+use App\Http\Controllers\Api\V1\Accounts\PartnerAccountsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, '__invoke'])->name('api.health');
@@ -257,10 +260,51 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}',            [NotificationController::class, 'destroy'])->name('notifications.destroy');
     });
 
-    // Reports 
+    // Reports
     Route::prefix('reports')->group(function () {
         Route::get('/types',              [ReportController::class, 'types'])->middleware('permission:report.view')->name('reports.types');
         Route::get('/{type}/data',        [ReportController::class, 'data'])->middleware('permission:report.view')->name('reports.data');
         Route::get('/{type}/export',      [ReportController::class, 'export'])->middleware('permission:report.export')->name('reports.export');
+    });
+
+    Route::prefix('settings')->middleware('permission:setting.manage')->group(function () {
+        Route::get('/',                      [SettingController::class, 'index'])->name('settings.index');
+        Route::get('/group/{group}',         [SettingController::class, 'byGroup'])->name('settings.by-group');
+        Route::put('/{key}',                 [SettingController::class, 'update'])->name('settings.update');
+        Route::post('/bulk',                 [SettingController::class, 'bulkUpdate'])->name('settings.bulk-update');
+        Route::post('/reset/{key}',          [SettingController::class, 'reset'])->name('settings.reset');
+    });
+
+    // Roles & Permissions
+    Route::prefix('roles-permissions')->middleware('permission:role.manage')->group(function () {
+        Route::get('/',                      [RolePermissionController::class, 'index'])->name('roles.index');
+        Route::post('/{roleId}',             [RolePermissionController::class, 'update'])->name('roles.update');
+    });
+
+    // Business Models Master List Management
+    Route::prefix('business-models')->group(function () {
+        Route::get('/',                      [\App\Http\Controllers\Api\V1\Lookup\BusinessModelController::class, 'index'])->name('business-models.index');
+        Route::post('/',                     [\App\Http\Controllers\Api\V1\Lookup\BusinessModelController::class, 'store'])->middleware('permission:setting.manage')->name('business-models.store');
+        Route::put('/{businessModel}',        [\App\Http\Controllers\Api\V1\Lookup\BusinessModelController::class, 'update'])->middleware('permission:setting.manage')->name('business-models.update');
+        Route::delete('/{businessModel}',     [\App\Http\Controllers\Api\V1\Lookup\BusinessModelController::class, 'destroy'])->middleware('permission:setting.manage')->name('business-models.destroy');
+    });
+
+    // ── Partner Accounts 
+    Route::prefix('accounts')->group(function () {
+        Route::get('/outstanding',     [PartnerAccountsController::class, 'outstanding'])
+            ->middleware('permission:payment.view')
+            ->name('accounts.outstanding');
+        Route::get('/commissions',     [PartnerAccountsController::class, 'commissions'])
+            ->middleware('permission:payment.view')
+            ->name('accounts.commissions');
+        Route::get('/invoices',        [PartnerAccountsController::class, 'invoices'])
+            ->middleware('permission:payment.view')
+            ->name('accounts.invoices');
+        Route::get('/credit-overview', [PartnerAccountsController::class, 'creditOverview'])
+            ->middleware('permission:payment.view')
+            ->name('accounts.credit-overview');
+        Route::post('/payments',       [PartnerAccountsController::class, 'recordPayment'])
+            ->middleware('permission:payment.create')
+            ->name('accounts.record-payment');
     });
 });
