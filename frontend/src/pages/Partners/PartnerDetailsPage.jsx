@@ -1423,7 +1423,7 @@ export default function PartnerDetailsPage() {
                   {revenuesData?.data?.length > 0 ? (
                     revenuesData.data.map((r) => (
                       <tr key={r.id}>
-                        <td>{r.revenue_date}</td>
+                        <td>{r.revenue_date ? String(r.revenue_date).split('T')[0] : '—'}</td>
                         <td><span className="badge bg-success-subtle text-success">{r.revenue_source}</span></td>
                         <td>{r.source_reference || 'N/A'}</td>
                         <td className="fw-bold text-success">৳{Number(r.amount).toLocaleString()}</td>
@@ -1454,7 +1454,7 @@ export default function PartnerDetailsPage() {
                   {costsData?.data?.length > 0 ? (
                     costsData.data.map((c) => (
                       <tr key={c.id}>
-                        <td>{c.cost_date}</td>
+                        <td>{c.cost_date ? String(c.cost_date).split('T')[0] : '—'}</td>
                         <td><span className="badge bg-danger-subtle text-danger">{c.cost_type}</span></td>
                         <td>{c.source_reference || 'N/A'}</td>
                         <td className="fw-bold text-danger">৳{Number(c.amount).toLocaleString()}</td>
@@ -1485,7 +1485,7 @@ export default function PartnerDetailsPage() {
                   {paymentsData?.data?.length > 0 ? (
                     paymentsData.data.map((p) => (
                       <tr key={p.id}>
-                        <td>{p.payment_date}</td>
+                        <td>{p.payment_date ? String(p.payment_date).split('T')[0] : '—'}</td>
                         <td>{p.payment_method}</td>
                         <td>{p.reference_number || 'N/A'}</td>
                         <td className="fw-bold text-primary">৳{Number(p.amount).toLocaleString()}</td>
