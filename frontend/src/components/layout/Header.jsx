@@ -18,7 +18,7 @@ function timeAgo(dateStr) {
 const routeTitles = {
   '/': 'Dashboard Overview',
   '/partners': 'Partner Directory',
-  '/bandwidth': 'Bandwidth Allocation',
+  '/bw-dashboard': 'Bandwidth Allocation',
   '/commission': 'Commission Management',
   '/support-centers': 'Support Centers',
   '/partner-accounts': 'Financial Accounts',

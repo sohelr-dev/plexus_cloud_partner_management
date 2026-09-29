@@ -22,7 +22,7 @@ const navGroups = [
     items: [
       { label: 'Dashboard', to: '/', icon: LayoutDashboard },
       { label: 'Partners', to: '/partners', icon: Users },
-      { label: 'Bandwidth', to: '/bandwidth', icon: Network },
+      { label: 'Bandwidth', to: '/bw-dashboard', icon: Network },
       { label: 'End Devices', to: '/end-devices', icon: Smartphone },
     ]
   },

@@ -70,7 +70,7 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="/bandwidth"
+                    path="/bw-dashboard"
                     element={
                       <RoleRoute allow={['*']}>
                         <BandwidthDashboardPage />
