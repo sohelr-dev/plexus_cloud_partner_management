@@ -22,6 +22,7 @@ import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RoleRoute, { ForbiddenPage } from './routes/RoleRoute'
+import ErrorBoundary from './components/common/ErrorBoundary'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,9 +52,23 @@ export default function App() {
                 <Route element={<AppLayout />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/partners" element={<PartnersListPage />} />
-                  <Route path="/partners/new" element={<PartnerFormPage />} />
+                  <Route
+                    path="/partners/new"
+                    element={
+                      <RoleRoute permission="partner.create">
+                        <PartnerFormPage />
+                      </RoleRoute>
+                    }
+                  />
                   <Route path="/partners/:id" element={<PartnerDetailsPage />} />
-                  <Route path="/partners/:id/edit" element={<PartnerEditPage />} />
+                  <Route
+                    path="/partners/:id/edit"
+                    element={
+                      <RoleRoute permission="partner.update">
+                        <PartnerEditPage />
+                      </RoleRoute>
+                    }
+                  />
                   <Route
                     path="/audit-logs"
                     element={
@@ -65,7 +80,7 @@ export default function App() {
                   <Route
                     path="/commission"
                     element={
-                      <RoleRoute allow={['*']}>
+                      <RoleRoute permission={['commission.view', 'commission.approve']}>
                         <CommissionDashboardPage />
                       </RoleRoute>
                     }
@@ -73,7 +88,7 @@ export default function App() {
                   <Route
                     path="/bw-dashboard"
                     element={
-                      <RoleRoute allow={['*']}>
+                      <RoleRoute permission={['bandwidth.view', 'bandwidth.create']}>
                         <BandwidthDashboardPage />
                       </RoleRoute>
                     }
@@ -81,7 +96,7 @@ export default function App() {
                   <Route
                     path="/end-devices"
                     element={
-                      <RoleRoute allow={['*']}>
+                      <RoleRoute permission={['device.view', 'equipment.view']}>
                         <EndDevicesPage />
                       </RoleRoute>
                     }
@@ -89,7 +104,7 @@ export default function App() {
                   <Route
                     path="/support-centers"
                     element={
-                      <RoleRoute allow={['*']}>
+                      <RoleRoute permission="support-center.view">
                         <SupportCenterDashboardPage />
                       </RoleRoute>
                     }
@@ -97,7 +112,7 @@ export default function App() {
                   <Route
                     path="/reports"
                     element={
-                      <RoleRoute allow={['*']}>
+                      <RoleRoute permission={['report.view', 'report.export']}>
                         <ReportsPage />
                       </RoleRoute>
                     }

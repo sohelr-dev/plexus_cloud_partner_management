@@ -17,30 +17,32 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+import { usePermissions } from '../../context/PermissionContext'
+
 const navGroups = [
   {
     title: 'Core',
     items: [
       { label: 'Dashboard', to: '/', icon: LayoutDashboard },
-      { label: 'Partners', to: '/partners', icon: Users },
-      { label: 'Bandwidth', to: '/bw-dashboard', icon: Network },
-      { label: 'End Devices', to: '/end-devices', icon: Smartphone },
+      { label: 'Partners', to: '/partners', icon: Users, permission: 'partner.view' },
+      { label: 'Bandwidth', to: '/bw-dashboard', icon: Network, permission: ['bandwidth.view', 'bandwidth.create'] },
+      { label: 'End Devices', to: '/end-devices', icon: Smartphone, permission: ['device.view', 'equipment.view'] },
     ]
   },
   {
     title: 'Finance & Ops',
     items: [
-      { label: 'Commission', to: '/commission', icon: Coins },
-      { label: 'Support Centers', to: '/support-centers', icon: Building2 },
-      { label: 'Partner Accounts', to: '/partner-accounts', icon: Wallet },
+      { label: 'Commission', to: '/commission', icon: Coins, permission: ['commission.view', 'commission.approve'] },
+      { label: 'Support Centers', to: '/support-centers', icon: Building2, permission: 'support-center.view' },
+      { label: 'Partner Accounts', to: '/partner-accounts', icon: Wallet, permission: ['partner-account.view', 'payment.view'] },
     ]
   },
   {
     title: 'Administration',
     items: [
-      { label: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert },
-      { label: 'Reports', to: '/reports', icon: BarChart3 },
-      { label: 'Settings', to: '/settings', icon: Settings },
+      { label: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert, permission: 'audit-log.view' },
+      { label: 'Reports', to: '/reports', icon: BarChart3, permission: ['report.view', 'report.export'] },
+      { label: 'Settings', to: '/settings', icon: Settings, permission: 'setting.manage' },
     ]
   },
   {
@@ -58,6 +60,15 @@ export default function Sidebar({
   onToggleCollapse,
   onClose,
 }) {
+  const { can } = usePermissions()
+
+  const visibleNavGroups = navGroups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => !item.permission || can(item.permission))
+    }))
+    .filter(group => group.items.length > 0)
+
   const classes = [
     'pm-sidebar',
     collapsed && !isMobile ? 'pm-collapsed' : '',
@@ -100,7 +111,7 @@ export default function Sidebar({
       </div>
 
       <div className="pm-nav-list">
-        {navGroups.map((group, i) => (
+        {visibleNavGroups.map((group, i) => (
           <div key={i}>
             <div className="pm-nav-section">{group.title}</div>
             {group.items.map(({ label, to, icon: Icon, badge }) => (

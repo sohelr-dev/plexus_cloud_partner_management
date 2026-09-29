@@ -162,8 +162,46 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Quick Role Fill for Testing / Review */}
+          <div className="mt-4 pt-3 border-top">
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="small text-muted fw-semibold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Quick Login By Department Role:
+              </span>
+            </div>
+            <div className="d-flex flex-wrap gap-1">
+              {[
+                { label: 'Admin', email: 'admin@plexuscloud.com' },
+                { label: 'Management', email: 'management@plexuscloud.com' },
+                { label: 'Partner Mgr', email: 'manager@plexuscloud.com' },
+                { label: 'Sales', email: 'sales@plexuscloud.com' },
+                { label: 'Marketing', email: 'marketing@plexuscloud.com' },
+                { label: 'Finance', email: 'finance@plexuscloud.com' },
+                { label: 'Accounts', email: 'accounts@plexuscloud.com' },
+                { label: 'Network', email: 'network@plexuscloud.com' },
+                { label: 'Inventory', email: 'inventory@plexuscloud.com' },
+                { label: 'Support Ctr', email: 'support@plexuscloud.com' },
+                { label: 'Sys Admin', email: 'sysadmin@plexuscloud.com' },
+              ].map((item) => (
+                <button
+                  key={item.email}
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary py-1 px-2 border-0 bg-light text-dark shadow-none"
+                  style={{ fontSize: '0.72rem', borderRadius: '4px' }}
+                  onClick={() => {
+                    setEmail(item.email)
+                    setPassword('password')
+                  }}
+                  title={`Fill ${item.email}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="pm-auth-hint">
-            Protected by Laravel Sanctum authentication.
+            Protected by Laravel Sanctum &amp; Spatie Role-Based Access Control.
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -67,20 +67,22 @@ import BusinessModelsTab from '../../features/partners/BusinessModelsTab'
 import UsersCustomersTab from '../../features/partners/UsersCustomersTab'
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: Activity },
-  { id: 'business', label: 'Business Info', icon: Building2 },
-  { id: 'models', label: 'Business Models', icon: Layers },
-  { id: 'marketing', label: 'Marketing & Sales', icon: TrendingUp },
-  { id: 'financial', label: 'Financials & P&L', icon: DollarSign },
-  { id: 'bandwidth', label: 'Bandwidth', icon: Wifi },
-  { id: 'devices', label: 'Equipment & Devices', icon: HardDrive },
-  { id: 'users_customers', label: 'Users & Customers', icon: Users },
-  { id: 'commission', label: 'Commission', icon: CreditCard },
-  { id: 'support_centers', label: 'Support Centers', icon: Store },
-  { id: 'documents', label: 'Documents', icon: Folder },
-  { id: 'history', label: 'History & Timeline', icon: History },
-  { id: 'health_risk', label: 'Health & Risk', icon: AlertTriangle },
-  { id: 'audit', label: 'Audit Trail', icon: ClipboardList },
+  { id: 'overview', label: 'Overview', icon: Activity, permission: 'partner.view' },
+  { id: 'business', label: 'Business Info', icon: Building2, permission: 'partner.view' },
+  { id: 'models', label: 'Business Models', icon: Layers, permission: 'partner.view' },
+  { id: 'marketing', label: 'Marketing & Sales', icon: TrendingUp, permission: 'marketing.view' },
+  { id: 'financial', label: 'Financials & P&L', icon: DollarSign, permission: ['revenue.view', 'cost.view', 'payment.view', 'partner-account.view'] },
+  { id: 'bandwidth', label: 'Bandwidth', icon: Wifi, permission: ['bandwidth.view', 'bandwidth.create'] },
+  { id: 'devices', label: 'Equipment & Devices', icon: HardDrive, permission: ['equipment.view', 'device.view'] },
+  { id: 'users_customers', label: 'Users & Customers', icon: Users, permission: 'partner.view' },
+  { id: 'commission', label: 'Commission', icon: CreditCard, permission: ['commission.view', 'commission.approve'] },
+  { id: 'support_centers', label: 'Support Centers', icon: Store, permission: 'support-center.view' },
+  { id: 'documents', label: 'Documents', icon: Folder, permission: 'document.view' },
+  // history: intentionally broad — any partner-viewer can see activity timeline
+  { id: 'history', label: 'History & Timeline', icon: History, permission: ['timeline.view', 'partner.view'] },
+  // health_risk: sensitive business health data — management, partner-manager (risk.view), finance & accounts (revenue/account)
+  { id: 'health_risk', label: 'Health & Risk', icon: AlertTriangle, permission: ['risk.view', 'revenue.view', 'partner-account.view'] },
+  { id: 'audit', label: 'Audit Trail', icon: ClipboardList, permission: 'audit-log.view' },
 ]
 
 export default function PartnerDetailsPage() {
@@ -89,7 +91,19 @@ export default function PartnerDetailsPage() {
   const queryClient = useQueryClient()
   const { can } = usePermissions()
 
+  const visibleTabs = useMemo(() => {
+    return TABS.filter(tab => !tab.permission || can(tab.permission))
+  }, [can])
+
   const [activeTab, setActiveTab] = useState('overview')
+
+  // Auto-fallback if the currently selected tab is not permitted for the user
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.some(t => t.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id)
+    }
+  }, [visibleTabs, activeTab])
+
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'status_change' })
   const [activeFinModal, setActiveFinModal] = useState(null) // 'revenue' | 'cost' | 'payment'
   const [showQuickActions, setShowQuickActions] = useState(false)
@@ -116,7 +130,7 @@ export default function PartnerDetailsPage() {
   const { data: pnl } = useQuery({
     queryKey: ['partnerPnL', id],
     queryFn: () => fetchPartnerPnL(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && can(['revenue.view', 'cost.view', 'payment.view', 'partner-account.view']),
   })
 
   // 3. Fetch Financial Lists
@@ -770,7 +784,7 @@ export default function PartnerDetailsPage() {
       {/* Tab Navigation) */}
       <div className="pm-card mb-4 p-2 overflow-x-auto">
         <div className="nav nav-pills flex-nowrap gap-1">
-          {TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (

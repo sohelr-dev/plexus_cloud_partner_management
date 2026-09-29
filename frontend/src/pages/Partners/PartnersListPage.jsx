@@ -444,7 +444,7 @@ export default function PartnersListPage() {
                           <Link to={`/partners/${p.id}`} className="pm-icon-btn d-inline-flex" style={{ width: 32, height: 32 }} title="View Details">
                             <Eye size={15} />
                           </Link>
-                          {['Pending Approval','Under Review'].includes(p.status) && (
+                          {['Pending Approval','Under Review'].includes(p.status) && can('partner.approve') && (
                             <button
                               onClick={() => setModalState({ isOpen: true, partner: p, mode: 'approve' })}
                               className="pm-icon-btn d-inline-flex text-success"

@@ -14,8 +14,13 @@ const PermissionContext = createContext(null)
 export function PermissionProvider({ children }) {
   const { user } = useAuth()
 
-  const roles       = user?.roles       ?? []
-  const permissions = user?.permissions ?? []
+  const roles = Array.isArray(user?.roles)
+    ? user.roles
+    : (user?.roles ? Object.values(user.roles) : [])
+
+  const permissions = Array.isArray(user?.permissions)
+    ? user.permissions
+    : (user?.permissions ? Object.values(user.permissions) : [])
 
   /**
    * Check if the current user has one (or any) of the given roles.
