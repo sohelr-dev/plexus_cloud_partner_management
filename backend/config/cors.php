@@ -16,9 +16,14 @@ return [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'https://plexus.sohelit.com',
+        'http://plexus.sohelit.com',
+        'https://www.plexus.sohelit.com',
+        'http://www.plexus.sohelit.com',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https?://(.*\.)?sohelit\.com$#',
+    ],
 
     'allowed_headers' => ['*'],
 
