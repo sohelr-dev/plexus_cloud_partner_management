@@ -97,6 +97,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'partner.view', 'partner.create', 'partner.update', 'partner.delete', 'partner.approve',
             'partner-profile.view', 'partner-profile.update',
             'bandwidth.view', 'bandwidth.create', 'bandwidth.update',
+            'commission.view',                                          // view commission structure of managed partners
+            'marketing.view', 'marketing.create', 'marketing.update',  // see/manage marketing data for partners
             'document.view', 'document.upload',
             'note.view', 'note.create', 'note.update', 'note.delete',
             'timeline.view', 'timeline.create',
