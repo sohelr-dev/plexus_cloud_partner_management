@@ -24,6 +24,7 @@ const routeTitles = {
   '/partner-accounts': 'Financial Accounts',
   '/reports': 'Executive Reports Hub',
   '/settings': 'Platform Settings',
+  '/user-guide': 'User Guide & Field Reference',
 }
 
 export default function Header({ onToggleSidebar, isMobile }) {

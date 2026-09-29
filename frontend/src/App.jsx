@@ -17,6 +17,7 @@ import NotificationsPage from './pages/Notifications/NotificationsPage'
 import LoginPage from './pages/Auth/LoginPage'
 import SettingsPage from './pages/Settings/SettingsPage'
 import PartnerAccountsPage from './pages/PartnerAccounts/PartnerAccountsPage'
+import UserGuidePage from './pages/Guide/UserGuidePage'
 import { AuthProvider } from './context/AuthContext'
 import { PermissionProvider } from './context/PermissionContext'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -122,6 +123,14 @@ export default function App() {
                     element={
                       <RoleRoute permission="setting.manage">
                         <SettingsPage />
+                      </RoleRoute>
+                    }
+                  />
+                  <Route
+                    path="/user-guide"
+                    element={
+                      <RoleRoute allow={['*']}>
+                        <UserGuidePage />
                       </RoleRoute>
                     }
                   />

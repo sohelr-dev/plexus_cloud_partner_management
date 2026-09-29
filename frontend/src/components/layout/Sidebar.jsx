@@ -12,7 +12,8 @@ import {
   Users,
   Wallet,
   X,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
@@ -40,6 +41,12 @@ const navGroups = [
       { label: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert },
       { label: 'Reports', to: '/reports', icon: BarChart3 },
       { label: 'Settings', to: '/settings', icon: Settings },
+    ]
+  },
+  {
+    title: 'Help & Support',
+    items: [
+      { label: 'User Guide', to: '/user-guide', icon: BookOpen },
     ]
   }
 ]
