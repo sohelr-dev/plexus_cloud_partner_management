@@ -397,6 +397,7 @@ export default function PartnerDetailsPage() {
     center_name: '', branch_type: 'Branch', address: '', contact_number: '', email: '',
     working_hours: '', weekly_off_day: '', opening_date: '', service_coverage: '', status: 'Active',
   })
+  const [scBranchError, setScBranchError] = useState(null)
   const [scStaffForm, setScStaffForm] = useState({ staff_name: '', staff_category: 'Customer Service', designation: '', contact_number: '', email: '', joining_date: '', monthly_cost: '', status: 'Active' })
   const [scCostForm, setScCostForm] = useState({ cost_date: new Date().toISOString().split('T')[0], cost_type: 'Rent', amount: '', description: '' })
   const [scEquipmentForm, setScEquipmentForm] = useState({ equipment_type: 'Router', quantity: 1, status: 'Active' })
@@ -407,13 +408,48 @@ export default function PartnerDetailsPage() {
     enabled: activeTab === 'support_centers',
   })
   const scData = scSummaryRes?.data || {}
-  const scBranches = scData.branches || []
+  const scBranches = scData.centers || []
+  const [openBranchMap, setOpenBranchMap] = useState({})
+
+  const isBranchOpen = (branchId, idx) => {
+    return openBranchMap[branchId] !== undefined ? openBranchMap[branchId] : (idx === 0)
+  }
+
+  const toggleBranch = (branchId, idx) => {
+    setOpenBranchMap(prev => ({
+      ...prev,
+      [branchId]: !(prev[branchId] !== undefined ? prev[branchId] : (idx === 0))
+    }))
+  }
+
+  const expandAllBranches = () => {
+    const next = {}
+    scBranches.forEach(b => { next[b.id] = true })
+    setOpenBranchMap(next)
+  }
+
+  const collapseAllBranches = () => {
+    const next = {}
+    scBranches.forEach(b => { next[b.id] = false })
+    setOpenBranchMap(next)
+  }
 
   const scInvalidate = () => queryClient.invalidateQueries(['scSummary', id])
 
   const createScBranchMutation = useMutation({
     mutationFn: (data) => createSupportCenter(id, data),
-    onSuccess: () => { scInvalidate(); setActiveScModal(null); setScBranchForm({ center_name: '', branch_type: 'Branch', address: '', contact_number: '', email: '', working_hours: '', weekly_off_day: '', opening_date: '', service_coverage: '', status: 'Active' }) },
+    onSuccess: () => {
+      scInvalidate()
+      setActiveScModal(null)
+      setScBranchError(null)
+      setScBranchForm({ center_name: '', branch_type: 'Branch', address: '', contact_number: '', email: '', working_hours: '', weekly_off_day: '', opening_date: '', service_coverage: '', status: 'Active' })
+    },
+    onError: (e) => {
+      const msg = e?.response?.data?.message
+        || Object.values(e?.response?.data?.errors ?? {})[0]?.[0]
+        || 'Failed to create branch. Please try again.'
+      setScBranchError(msg)
+    },
   })
 
   const scStatusMutation = useMutation({
@@ -1987,11 +2023,23 @@ export default function PartnerDetailsPage() {
                 </h5>
                 <p className="text-muted small mb-0">Branch profile, staff, coverage, operating costs & profit contribution .</p>
               </div>
-              {can('partner.update') && (
-                <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveScModal('branch')}>
-                  <Plus size={14} /> Add Branch
-                </button>
-              )}
+              <div className="d-flex align-items-center gap-2">
+                {scBranches.length > 1 && (
+                  <div className="btn-group btn-group-sm">
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={expandAllBranches}>
+                      Expand All
+                    </button>
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={collapseAllBranches}>
+                      Collapse All
+                    </button>
+                  </div>
+                )}
+                {can('partner.update') && (
+                  <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => setActiveScModal('branch')}>
+                    <Plus size={14} /> Add Branch
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Summary KPIs */}
@@ -2010,25 +2058,31 @@ export default function PartnerDetailsPage() {
               <div className="text-center py-4"><div className="spinner-border text-primary" /></div>
             ) : (
               <div className="accordion" id="scBranchAccordion">
-                {scBranches.length > 0 ? scBranches.map((branch, idx) => (
-                  <div key={branch.id} className="accordion-item border mb-2 rounded-3 overflow-hidden">
-                    <h2 className="accordion-header">
-                      <button className={`accordion-button ${idx !== 0 ? 'collapsed' : ''} bg-light fw-semibold`} type="button" data-bs-toggle="collapse" data-bs-target={`#scCollapse${branch.id}`}>
-                        <span className="me-auto d-flex align-items-center gap-2">
-                          <Store size={16} className="text-primary" />
-                          {branch.center_name}
-                          <span className="badge bg-secondary-subtle text-secondary" style={{fontSize:'0.68rem'}}>{branch.sc_id}</span>
-                          <span className="badge bg-dark-subtle text-dark" style={{fontSize:'0.68rem'}}>{branch.branch_code}</span>
-                          <span className={`badge ${branch.status==='Active'?'bg-success-subtle text-success':branch.status==='Planned'?'bg-info-subtle text-info':branch.status==='Suspended'?'bg-warning-subtle text-warning':'bg-danger-subtle text-danger'}`} style={{fontSize:'0.68rem'}}>{branch.status}</span>
-                        </span>
-                        {branch.performance && (
-                          <span className={`me-3 d-none d-md-inline ${Number(branch.performance.profit_contribution) >= 0 ? 'text-success' : 'text-danger'}`} style={{fontSize:'0.78rem'}}>
-                            Profit Contribution: ৳{Number(branch.performance.profit_contribution||0).toLocaleString()}/mo
+                {scBranches.length > 0 ? scBranches.map((branch, idx) => {
+                  const isOpen = isBranchOpen(branch.id, idx)
+                  return (
+                    <div key={branch.id} className="accordion-item border mb-2 rounded-3 overflow-hidden">
+                      <h2 className="accordion-header">
+                        <button
+                          className={`accordion-button ${!isOpen ? 'collapsed' : ''} bg-light fw-semibold`}
+                          type="button"
+                          onClick={() => toggleBranch(branch.id, idx)}
+                        >
+                          <span className="me-auto d-flex align-items-center gap-2">
+                            <Store size={16} className="text-primary" />
+                            {branch.center_name}
+                            <span className="badge bg-secondary-subtle text-secondary" style={{fontSize:'0.68rem'}}>{branch.sc_id}</span>
+                            <span className="badge bg-dark-subtle text-dark" style={{fontSize:'0.68rem'}}>{branch.branch_code}</span>
+                            <span className={`badge ${branch.status==='Active'?'bg-success-subtle text-success':branch.status==='Planned'?'bg-info-subtle text-info':branch.status==='Suspended'?'bg-warning-subtle text-warning':'bg-danger-subtle text-danger'}`} style={{fontSize:'0.68rem'}}>{branch.status}</span>
                           </span>
-                        )}
-                      </button>
-                    </h2>
-                    <div id={`scCollapse${branch.id}`} className={`accordion-collapse collapse ${idx === 0 ? 'show' : ''}`} data-bs-parent="#scBranchAccordion">
+                          {branch.performance && (
+                            <span className={`me-3 d-none d-md-inline ${Number(branch.performance.profit_contribution) >= 0 ? 'text-success' : 'text-danger'}`} style={{fontSize:'0.78rem'}}>
+                              Profit Contribution: ৳{Number(branch.performance.profit_contribution||0).toLocaleString()}/mo
+                            </span>
+                          )}
+                        </button>
+                      </h2>
+                      <div id={`scCollapse${branch.id}`} className={`accordion-collapse collapse ${isOpen ? 'show' : ''}`}>
                       <div className="accordion-body">
                         {/* Profile row */}
                         <div className="row g-2 fs-7 mb-3">
@@ -2184,7 +2238,8 @@ export default function PartnerDetailsPage() {
                       </div>
                     </div>
                   </div>
-                )) : (
+                )
+                }) : (
                   <div className="text-center py-4 text-muted">
                     <Store size={32} className="mb-2 d-block mx-auto text-secondary" />
                     No Support Center branches yet — click "Add Branch" to create the first one.
@@ -2909,9 +2964,12 @@ export default function PartnerDetailsPage() {
             <div className="modal-content">
               <div className="modal-header"><h5 className="modal-title fw-bold">Add Support Center Branch</h5><button type="button" className="btn-close" onClick={() => setActiveScModal(null)} /></div>
               <div className="modal-body">
+                {scBranchError && (
+                  <div className="alert alert-danger py-2 small mb-3">⚠️ {scBranchError}</div>
+                )}
                 <div className="row g-3">
                   <div className="col-md-6"><label className="form-label small fw-semibold">Center Name *</label><input className="form-control" value={scBranchForm.center_name} onChange={(e) => setScBranchForm({ ...scBranchForm, center_name: e.target.value })} required /></div>
-                  <div className="col-md-3"><label className="form-label small fw-semibold">Branch Type</label><select className="form-select" value={scBranchForm.branch_type} onChange={(e) => setScBranchForm({ ...scBranchForm, branch_type: e.target.value })}>{['Main Branch','Branch','Micro Center','Planned Center'].map(t => <option key={t}>{t}</option>)}</select></div>
+                  <div className="col-md-3"><label className="form-label small fw-semibold">Branch Type</label><select className="form-select" value={scBranchForm.branch_type} onChange={(e) => setScBranchForm({ ...scBranchForm, branch_type: e.target.value })}>{['Head Office','Branch','Support Center','Franchise'].map(t => <option key={t}>{t}</option>)}</select></div>
                   <div className="col-md-3"><label className="form-label small fw-semibold">Status</label><select className="form-select" value={scBranchForm.status} onChange={(e) => setScBranchForm({ ...scBranchForm, status: e.target.value })}>{['Planned','Active','Temporarily Closed','Suspended','Closed'].map(s => <option key={s}>{s}</option>)}</select></div>
                   <div className="col-12"><label className="form-label small fw-semibold">Address</label><input className="form-control" value={scBranchForm.address} onChange={(e) => setScBranchForm({ ...scBranchForm, address: e.target.value })} /></div>
                   <div className="col-md-4"><label className="form-label small fw-semibold">Contact Number</label><input className="form-control" value={scBranchForm.contact_number} onChange={(e) => setScBranchForm({ ...scBranchForm, contact_number: e.target.value })} /></div>

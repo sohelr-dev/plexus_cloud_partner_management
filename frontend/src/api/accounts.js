@@ -1,5 +1,10 @@
 import api from './client'
 
+/** GET /api/v1/partners — lightweight list for dropdowns */
+export const fetchPartnersDropdown = () =>
+  api.get('/partners', { params: { per_page: 200, fields: 'id,name,partner_code,status' } })
+    .then((r) => r.data?.data ?? r.data ?? [])
+
 /** GET /api/v1/accounts/outstanding */
 export const fetchOutstanding = (params = {}) =>
   api.get('/accounts/outstanding', { params }).then((r) => r.data.data)

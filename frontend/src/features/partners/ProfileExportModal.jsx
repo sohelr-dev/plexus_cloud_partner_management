@@ -105,7 +105,7 @@ export default function ProfileExportModal({ partnerId, partnerName, onClose }) 
 
           <div className="modal-body">
             <div className="alert alert-info py-2 small">
-              <strong>PRD §82:</strong> Export <strong>{partnerName}</strong> as PDF, Excel, CSV or Print.
+              <strong></strong> Export <strong>{partnerName}</strong> as PDF, Excel, CSV or Print.
               Choose what to include below.
             </div>
 

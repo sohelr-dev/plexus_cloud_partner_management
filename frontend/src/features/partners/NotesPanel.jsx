@@ -154,7 +154,6 @@ export default function NotesPanel({ partnerId }) {
         <div className="pm-card-header">
           <h6 className="pm-card-title mb-0">
             <MessageSquare size={16} className="me-2" />Internal Notes
-            <span className="text-muted ms-2" style={{ fontSize: '0.72rem' }}>PRD §80</span>
           </h6>
           {can('note.create') && (
             <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={openCreate}>

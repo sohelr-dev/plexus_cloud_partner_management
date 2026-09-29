@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchOutstanding,
@@ -6,6 +6,7 @@ import {
   fetchInvoices,
   fetchCreditOverview,
   recordAccountsPayment,
+  fetchPartnersDropdown,
 } from '../../api/accounts'
 import { usePermissions } from '../../context/PermissionContext'
 
@@ -98,6 +99,107 @@ function KpiCard({ label, value, sub, color = '#3b82f6', icon }) {
   )
 }
 
+// ─── Searchable Partner Picker ────────────────────────────────────────────────
+function PartnerPicker({ partners = [], value, onChange }) {
+  const [query, setQuery]   = useState('')
+  const [open, setOpen]     = useState(false)
+  const wrapRef             = useRef(null)
+
+  const selected = partners.find((p) => String(p.id) === String(value))
+
+  const filtered = query.trim()
+    ? partners.filter((p) =>
+        p.name?.toLowerCase().includes(query.toLowerCase()) ||
+        p.partner_code?.toLowerCase().includes(query.toLowerCase())
+      )
+    : partners
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const select = (p) => {
+    onChange(String(p.id))
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      {/* Trigger / selected display */}
+      {selected && !open ? (
+        <div
+          className="form-control d-flex align-items-center justify-content-between"
+          style={{ cursor: 'pointer', background: '#f0f9ff', borderColor: '#0ea5e9' }}
+          onClick={() => setOpen(true)}
+        >
+          <div>
+            <span className="fw-semibold" style={{ color: '#0369a1' }}>{selected.name}</span>
+            <span className="ms-2 badge bg-secondary" style={{ fontSize: '0.7rem' }}>
+              {selected.partner_code}
+            </span>
+          </div>
+          <span className="text-muted small">✎</span>
+        </div>
+      ) : (
+        <input
+          autoFocus={open}
+          className="form-control"
+          placeholder="🔍  Search partner name or code…"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+        />
+      )}
+
+      {/* Dropdown list */}
+      {open && (
+        <div style={{
+          position: 'absolute', zIndex: 1050, top: '100%', left: 0, right: 0,
+          background: '#fff', border: '1px solid #d1d5db', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: 240, overflowY: 'auto',
+          marginTop: 4,
+        }}>
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-muted small">No partners found</div>
+          ) : filtered.map((p) => (
+            <div
+              key={p.id}
+              onMouseDown={() => select(p)}
+              style={{
+                padding: '8px 12px', cursor: 'pointer',
+                background: String(p.id) === String(value) ? '#e0f2fe' : 'transparent',
+                borderBottom: '1px solid #f3f4f6',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f0f9ff'}
+              onMouseLeave={(e) => e.currentTarget.style.background =
+                String(p.id) === String(value) ? '#e0f2fe' : 'transparent'
+              }
+            >
+              <div className="fw-semibold" style={{ fontSize: '0.875rem', color: '#111827' }}>
+                {p.name}
+              </div>
+              <div className="d-flex gap-2 mt-1">
+                <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.7rem' }}>
+                  {p.partner_code}
+                </span>
+                <span className={`badge bg-${{ Active: 'success', Suspended: 'warning', Inactive: 'secondary' }[p.status] ?? 'secondary'}`}
+                  style={{ fontSize: '0.7rem' }}>
+                  {p.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
   const [form, setForm] = useState({
     partner_id:       partnerId ?? '',
@@ -109,6 +211,22 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
   })
   const [error, setError] = useState(null)
 
+  // Fetch partner list only when picker is needed (no pre-selected partner)
+  const { data: partnersList = [] } = useQuery({
+    queryKey: ['partners-dropdown'],
+    queryFn:  fetchPartnersDropdown,
+    enabled:  !partnerId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const partners = Array.isArray(partnersList)
+    ? partnersList
+    : (partnersList?.data ?? [])
+
+  const selectedPartner = partnerId
+    ? { name: partnerName }
+    : partners.find((p) => String(p.id) === String(form.partner_id))
+
   const mutation = useMutation({
     mutationFn: recordAccountsPayment,
     onSuccess: () => { onSuccess?.(); onClose() },
@@ -117,6 +235,7 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    if (!form.partner_id) { setError('Please select a partner.'); return }
     setError(null)
     mutation.mutate({ ...form, amount: parseFloat(form.amount) })
   }
@@ -128,7 +247,12 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
           <div className="modal-header border-bottom" style={{ background: 'linear-gradient(135deg,#1e3a5f,#0ea5e9)', color: '#fff' }}>
             <h5 className="modal-title fw-bold">
               <Icon path={ICONS.wallet} size={18} className="me-2" />
-              Record Payment {partnerName ? `— ${partnerName}` : ''}
+              Record Payment
+              {selectedPartner?.name && (
+                <span className="ms-2 opacity-90" style={{ fontWeight: 400, fontSize: '0.95rem' }}>
+                  — {selectedPartner.name}
+                </span>
+              )}
             </h5>
             <button type="button" className="btn-close btn-close-white" onClick={onClose} />
           </div>
@@ -137,15 +261,33 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
               {error && (
                 <div className="alert alert-danger py-2 small">{error}</div>
               )}
+
+              {/* Partner Picker — only shown when not pre-selected */}
               {!partnerId && (
                 <div className="mb-3">
-                  <label className="form-label fw-semibold small">Partner ID *</label>
-                  <input type="number" className="form-control" required
-                    value={form.partner_id}
-                    onChange={(e) => setForm({ ...form, partner_id: e.target.value })}
-                    placeholder="Partner database ID" />
+                  <label className="form-label fw-semibold small">
+                    <Icon path={ICONS.search} size={13} className="me-1" />
+                    Select Partner *
+                  </label>
+                  {partners.length === 0 ? (
+                    <div className="d-flex align-items-center gap-2 text-muted small">
+                      <Spinner size="sm" /> Loading partners…
+                    </div>
+                  ) : (
+                    <PartnerPicker
+                      partners={partners}
+                      value={form.partner_id}
+                      onChange={(id) => setForm({ ...form, partner_id: id })}
+                    />
+                  )}
+                  {form.partner_id && (
+                    <div className="form-text text-success">
+                      ✓ Partner ID: <strong>{form.partner_id}</strong>
+                    </div>
+                  )}
                 </div>
               )}
+
               <div className="row g-3">
                 <div className="col-sm-6">
                   <label className="form-label fw-semibold small">Payment Date *</label>
@@ -188,7 +330,7 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
             <div className="modal-footer border-top bg-light">
               <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn btn-primary btn-sm"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || (!partnerId && !form.partner_id)}
                 style={{ background: '#0ea5e9', borderColor: '#0ea5e9' }}>
                 {mutation.isPending ? <><Spinner size="sm" /> Saving…</> : 'Record Payment'}
               </button>
@@ -199,6 +341,7 @@ function PaymentModal({ partnerId, partnerName, onClose, onSuccess }) {
     </div>
   )
 }
+
 
 function OutstandingTab({ canPay }) {
   const [search, setSearch]   = useState('')

@@ -29,7 +29,7 @@ import {
 import { fetchCustomerGrowth, fetchPackagePerformance, recordCustomerMetric } from '../../api/marketing'
 
 /**
- * Users & Customers Tab (PRD Section 14 & Section 51)
+
  * Displays: Total Customers, Active, Suspended, Expired, New, Renewals, Terminations, Churn
  * Note: Core subscriber details come from the billing/subscriber system.
  */
@@ -86,7 +86,7 @@ export default function UsersCustomersTab({ partnerId, partner }) {
     },
   })
 
-  // Latest snapshot metrics (PRD Section 51)
+  // Latest snapshot metrics 
   const latest = useMemo(() => {
     if (!growthData || growthData.length === 0) {
       return {
@@ -146,16 +146,13 @@ export default function UsersCustomersTab({ partnerId, partner }) {
 
   return (
     <div className="fade-in">
-      {/* ── Section Header (PRD §51) ── */}
+      {/* ── Section Header  */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
           <div className="d-flex align-items-center gap-2">
             <h5 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
               <Users size={22} /> User / Customer Information
             </h5>
-            <span className="badge bg-primary-subtle text-primary border border-primary-subtle fs-8">
-              PRD §51
-            </span>
           </div>
           <p className="text-muted small mb-0 mt-1">
             Aggregated subscriber lifecycle, growth rate, renewals & churn intelligence.
@@ -178,15 +175,15 @@ export default function UsersCustomersTab({ partnerId, partner }) {
         </div>
       </div>
 
-      {/* ── PRD §51 Compliance Notice Box ── */}
+      {/* ── Compliance Notice Box ── */}
       <div className="alert alert-info py-2 px-3 small border-0 shadow-sm mb-4 d-flex align-items-start gap-2">
         <Info size={17} className="text-info flex-shrink-0 mt-1" />
         <div>
-          <strong>PRD Section 51 Requirement:</strong> <em>"Customer information should come from the existing customer/subscriber system."</em> Individual end-user credentials and IP/Radius allocations reside in the core BSS system, while this module monitors commercial customer base health, renewals, and churn for this partner.
+          <strong>Requirement:</strong> <em>"Customer information should come from the existing customer/subscriber system."</em> Individual end-user credentials and IP/Radius allocations reside in the core BSS system, while this module monitors commercial customer base health, renewals, and churn for this partner.
         </div>
       </div>
 
-      {/* ── Customer Lifecycle KPI Grid (PRD §51) ── */}
+      {/* ── Customer Lifecycle KPI Grid  ── */}
       <div className="row g-3 mb-4">
         {/* Total Customers */}
         <div className="col-6 col-md-4 col-xl-2">
@@ -249,7 +246,7 @@ export default function UsersCustomersTab({ partnerId, partner }) {
         </div>
       </div>
 
-      {/* ── Package Breakdown (PRD §26) ── */}
+      {/* ── Package Breakdown  ── */}
       {packageData.length > 0 && (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-3">
@@ -278,7 +275,7 @@ export default function UsersCustomersTab({ partnerId, partner }) {
         </div>
       )}
 
-      {/* ── Real Database Log: Customer Growth & Lifecycle History (PRD §51) ── */}
+      {/* ── Real Database Log: Customer Growth & Lifecycle History ── */}
       <div className="card border-0 shadow-sm overflow-hidden mb-4">
         <div className="card-header bg-white py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
           <div className="d-flex align-items-center gap-2">
@@ -376,7 +373,7 @@ export default function UsersCustomersTab({ partnerId, partner }) {
         </div>
       </div>
 
-      {/* ── Record / Sync Subscriber Metric Modal (PRD §51) ── */}
+      {/* ── Record / Sync Subscriber Metric Modal ── */}
       {isAddMetricOpen && (
         <div
           className="modal fade show d-block"
@@ -387,8 +384,7 @@ export default function UsersCustomersTab({ partnerId, partner }) {
             <div className="modal-content shadow border-0">
               <div className="modal-header border-bottom py-3">
                 <h6 className="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-                  <Users size={18} className="text-primary" /> Record / Sync Customer Metric (PRD §51)
-                </h6>
+                  <Users size={18} className="text-primary" /> Record / Sync Customer Metric                </h6>
                 <button
                   type="button"
                   className="btn-close"

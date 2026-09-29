@@ -20,7 +20,6 @@ import {
 import api from '../../api/client'
 import { usePermissions } from '../../context/PermissionContext'
 
-// Standard PRD Section 4 Business Models Metadata
 const MODEL_CONFIGS = {
   'bandwidth sales': {
     name: 'Bandwidth Sales',
@@ -202,7 +201,7 @@ export default function BusinessModelsTab({ partner, onTabChange }) {
         </div>
       </div>
 
-      {/* Detailed Cards for 4 Core PRD Business Models */}
+      {/* Detailed Cards  Business Models */}
       <div className="row g-4 mt-1">
         {Object.entries(MODEL_CONFIGS).map(([key, config]) => {
           const isAssigned = activeModels.some(
