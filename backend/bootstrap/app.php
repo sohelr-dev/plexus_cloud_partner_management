@@ -13,8 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Sanctum stateful API (cookie-based sessions — optional, token auth is primary)
-        $middleware->statefulApi();
+        // Using Bearer token auth — statefulApi() (CSRF/session) is NOT needed.
+        // Removing it prevents spurious 419 CSRF Token Mismatch errors.
 
         $middleware->alias([
             'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
